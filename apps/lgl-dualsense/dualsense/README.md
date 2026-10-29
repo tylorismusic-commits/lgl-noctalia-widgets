@@ -1,362 +1,263 @@
-# LGL DualSense Battery — Technical Reference
+# Gamepad Display — Technical Reference
 
-A Noctalia desktop widget for Sony DualSense (`054c:0ce6`) and DualSense Edge
-(`054c:0df2`) controllers that shows the battery level, charging state,
-connection type, player indicator LEDs and active `ds4u` profile.
+A live controller display for Noctalia Shell. The desktop widget shows the pad
+you are actually using, its model-specific artwork, battery and connection
+state, and every button, stick, trigger and D-pad direction as you use them.
 
-By default the card mirrors the controller's effective **`ds4u` lightbar colour** on both
-the touchpad lightbar accents and the battery fill, or can switch to
-**connection colours** (PlayStation blue over Bluetooth, green on USB-C), or a
-custom colour with adjustable opacity. The effective colour includes the
-profile's `lightbar_brightness`. Charging pulses; low battery turns red.
+Built for KineticWE's `noctalia-kwe` v5 build (tested live on 5.3.0) and the
+upstream Noctalia v5 plugin API.
 
 | Field | Value |
 | --- | --- |
-| ID | `deadYokai/dualsense` |
-| Version | `1.1.0` |
-| Entries | Service `battery`, desktop widget `card` |
+| Plugin ID | `deadYokai/dualsense` |
+| Display name | `Gamepad Display` |
+| Version | `1.2.0` |
+| Entries | Services `battery` + `listener`, desktop widget `inputs` |
 | Plugin API | 17 |
+| Licence | MIT |
+
+## Supported controllers
+
+| Model | USB / Bluetooth IDs | Artwork and buttons | Notes |
+| --- | --- | --- | --- |
+| DualSense | `054c:0ce6` | DualSense art, PlayStation glyphs | USB and Bluetooth |
+| DualSense Edge | `054c:0df2` | DualSense art, PlayStation glyphs | USB and Bluetooth |
+| DualShock 4 | `054c:05c4`, `054c:09cc` | DS4 art, PlayStation glyphs | USB recommended (see below) |
+| 8BitDo Ultimate 2C | `2dc8:301b` (BT), `2dc8:310a` (USB receiver) | Xbox art, A/B/X/Y letters | Bluetooth and 2.4 GHz receiver |
+| Generic XInput-style pad | any evdev pad with `ABS_X` | Xbox art, A/B/X/Y letters | Capability-driven axis mapping |
+
+Virtual pads (Sunshine, `libvirtualhid`, `uinput`, Steam virtual controllers) and
+the extra motion/touchpad nodes Sony pads expose are ignored, so a streaming
+session cannot hijack the widget.
+
+When several pads are connected, the one you touched last is shown. Plugging a
+pad in also takes it over. Until something is touched, Sony pads win over
+8BitDo, which wins over generic XInput pads.
+
+## Features
+
+- **Live input state** — face buttons, shoulders, analog triggers, both sticks
+  with press (`L3`/`R3`), D-pad, and the extra `Create`, `Options`, `PS`,
+  touchpad-click and mute buttons. Updates at up to 50 Hz while you play.
+- **Model-specific artwork** — DualSense/Edge, DualShock 4 and Xbox-style
+  drawings are generated from SVG templates into the plugin data directory and
+  recoloured from your settings.
+- **Correct face labels** — PlayStation shapes for Sony pads, Xbox `A/B/X/Y`
+  letters for 8BitDo and XInput pads.
+- **Capability-driven mapping** — stick and trigger axes are read from each
+  device's evdev capabilities, so the 8BitDo's non-standard
+  `ABS_Z`/`ABS_RZ`/`ABS_GAS`/`ABS_BRAKE` layout works without a special case.
+- **8BitDo Bluetooth fix** — Switch-ordered face buttons are remapped
+  automatically when the pad reports the extra `BTN_C` code.
+- **Battery in the header** — percentage plus charging and USB/Bluetooth
+  glyphs, read from kernel `power_supply` (Sony) or BlueZ `Battery1`
+  (Bluetooth pads). XInput receivers without a battery node simply omit it.
+- **Centered header** — controller art, model name and battery sit centered
+  above the input rows; the widget is labelled **Gamepad Display** in the
+  desktop-widget picker.
+- **No hidraw contention** — the input reader only uses `/dev/input/event*`,
+  so it runs alongside `ds4u`, Steam Input, and the plugin's own battery
+  service without competing for HID reports.
+- **Low-battery notifications** — optional, handled by the separate battery
+  service at a configurable threshold.
+
+## Architecture
+
+Two headless services and one desktop widget:
+
+| Entry | File | Job |
+| --- | --- | --- |
+| Service `battery` | `battery.luau` | Runs `code/ds_battery_daemon.py`; DualSense battery, charging state, `ds4u` integration and low-battery notifications |
+| Service `listener` | `inputs.luau` | Runs `code/ds_inputs_daemon.py --stream`; publishes live input state |
+| Desktop widget `inputs` | `inputs_card.luau` | Renders the card and generates the controller artwork |
+
+State flow:
+
+```text
+/dev/input/event* ──► ds_inputs_daemon.py ──► JSON lines ──► inputs.luau
+                                                              │
+                                                              ▼
+                                                    noctalia.state "inputs"
+                                                              │
+                                                              ▼
+                                                       inputs_card.luau
+```
+
+The input daemon also keeps a state file fresh, so the widget can pick up the
+current pad after a shell restart. The daemons are single-instance: a lock file
+prevents a stale copy from surviving a shell restart.
+
+The battery service is independent. It still speaks `ds4u` IPC and hidraw for
+Sony battery reads and notifications, but the widget's battery readout comes
+from the input service so it also works for 8BitDo and XInput pads.
 
 ## Requirements
 
-- Noctalia Shell with plugin API 17 or newer, including KineticWE's
-  `noctalia-kwe` build of Noctalia v5
+- Noctalia Shell v5 with plugin API 17 or newer (`noctalia-kwe` tested)
 - Python 3 (standard library only — no pip packages)
-- Optional: [`ds4u`](https://git.yokai.digital/deadYokai/ds4u); see
-  [Why ds4u is optional](#why-ds4u-is-optional)
-- Permission to access the DualSense `/dev/hidraw*` nodes (setup below)
+- Read access to the kernel evdev nodes (`/dev/input/event*`)
+- Optional: [`ds4u`](https://git.yokai.digital/deadYokai/ds4u) for Sony battery
+  IPC and profile/rumble features
+- Optional: the udev rule below if you want the battery service to read
+  DualSense hidraw nodes directly
 
-### Why ds4u is optional
+### Input permissions
 
-The widget does **not** require ds4u just to show battery, charging and
-connection state. Without ds4u, the bundled Python monitor can read the
-controller directly and can send basic rumble/lightbar commands.
+Most desktops grant the active seat access to input devices automatically via
+`uaccess` ACLs. If the widget stays on “Waiting for controller”, check the
+nodes and test one:
 
-Install ds4u if you want its controller-management features:
+```bash
+ls -l /dev/input/event*
+sudo evtest /dev/input/eventN   # pick the gamepad node
+```
 
-- a graphical editor for creating profiles
-- profile switching from the widget dropdown
-- lightbar brightness, player LEDs, trigger, gyro, remapping and haptic settings
-- animated lightbar effects
-- one long-running controller daemon shared by ds4u and this widget
+If your user cannot open the node, add yourself to the `input` group and log
+back in:
 
-When `ds4u --daemon` is running, the widget talks to its Unix socket instead of
-competing with it for controller reports. Without ds4u, the profile dropdown
-normally contains only `Default`, and the cog cannot open the ds4u profile
-editor. In both modes, the user running ds4u/Noctalia needs permission to access
-the controller's hidraw device.
+```bash
+sudo usermod -aG input "$USER"
+```
 
-### Give your user controller access (udev)
+The input reader never opens hidraw, so no controller-specific udev rule is
+needed for the live display.
 
-#### What this is for
+### Optional DualSense hidraw rule (battery service)
 
-Linux exposes the controller's low-level USB/Bluetooth reports as a file named
-`/dev/hidrawN` (for example `/dev/hidraw0`). That file is protected so ordinary
-applications cannot automatically read every USB device. The udev rule below
-identifies only Sony DualSense and DualSense Edge controllers and grants the
-active desktop user read/write access.
-
-You normally do this **once**. It is needed whether the controller is read
-directly by the widget or by ds4u.
-
-#### 1. Install the rule
-
-Copy and paste this complete block into a terminal:
+Only needed for the battery service's direct HID reads and `ds4u` coexistence:
 
 ```bash
 sudo tee /etc/udev/rules.d/70-dualsense.rules >/dev/null <<'EOF'
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="0ce6", MODE="0664", GROUP="input", TAG+="uaccess"
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="0df2", MODE="0664", GROUP="input", TAG+="uaccess"
 EOF
-
 sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=hidraw
 ```
 
-The two product IDs are:
-
-- `054c:0ce6` — DualSense
-- `054c:0df2` — DualSense Edge
-
-`TAG+="uaccess"` asks systemd/udev to grant access to the user currently logged
-in at the local graphical seat. `GROUP="input"` provides a fallback for systems
-that do not apply those per-user ACLs.
-
-#### 2. Reconnect the controller
-
-Rules are applied when a device appears. After installing the rule:
-
-- USB: unplug the cable, then reconnect it.
-- Bluetooth: disconnect the controller, then reconnect it.
-
-Merely reloading the rule does not always change permissions on an already-open
-device.
-
-#### 3. Verify access
-
-Keep the controller connected and run this complete block. It searches sysfs
-for Sony's vendor/product IDs, prints the matching `/dev/hidrawN` path, then
-checks whether your current user can read and write it:
-
-```bash
-controller_node=""
-for sysfs in /sys/class/hidraw/hidraw*; do
-  if grep -qiE '^HID_ID=.*054C.*(0CE6|0DF2)' "$sysfs/device/uevent" 2>/dev/null; then
-    controller_node="/dev/${sysfs##*/}"
-    echo "DualSense node: $controller_node"
-    ls -l "$controller_node"
-  fi
-done
-
-if [ -z "$controller_node" ]; then
-  echo "No DualSense hidraw node found"
-elif [ -r "$controller_node" ] && [ -w "$controller_node" ]; then
-  echo "hidraw access OK"
-else
-  echo "Controller found, but your user does not have read/write access"
-fi
-```
-
-Success looks like:
-
-```text
-DualSense node: /dev/hidraw0
-hidraw access OK
-```
-
-The number may be different and can change after reconnecting. That is normal.
-
-If the controller is found but access fails, first log out of the desktop and
-back in so the seat ACL is recreated. If it still fails, use the `input` group
-fallback, then log out and back in again:
-
-```bash
-sudo usermod -aG input "$USER"
-```
-
-You can inspect the exact ACL with `getfacl /dev/hidrawN`, replacing `N` with
-the number printed by the verification block. The `getfacl` command is optional
-and may require your distribution's `acl` package.
-
-If no DualSense node is found, first check whether Linux sees the controller:
-
-```bash
-# USB (either command may print the controller)
-lsusb -d 054c:0ce6
-lsusb -d 054c:0df2
-
-# Bluetooth
-bluetoothctl devices Connected
-```
-
-Do not change the rule to `MODE="0666"`. That would let every local user and
-process control the device. Fix the active-seat ACL or group membership instead.
-
-#### Remove the udev rule
-
-To undo the rule:
-
-```bash
-sudo rm /etc/udev/rules.d/70-dualsense.rules
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=hidraw
-```
-
-Reconnect the controller afterward so the old permissions are discarded. If
-you also added yourself to `input` solely for this plugin, you may remove that
-membership, then log out and back in:
-
-```bash
-sudo gpasswd -d "$USER" input
-```
+Unplug/replug USB pads or reconnect Bluetooth afterwards.
 
 ## Install
 
-From the app directory (`apps/lgl-dualsense`):
+From the app directory (`apps/lgl-dualsense` in the repository):
 
 ```bash
-# KineticWE's noctalia-kwe fork
-./install-kwe.sh
-
-# Upstream Noctalia
-./install.sh
+./install-kwe.sh    # noctalia-kwe
+./install.sh        # upstream Noctalia
 ```
 
-Enable the plugin and verify the service is running. For KWE:
+The scripts symlink the plugin into
+`~/.local/share/noctalia-kwe/plugins` or `~/.local/share/noctalia/plugins`,
+reload the config and enable `deadYokai/dualsense` when the shell is running.
+
+If the widget was added before, place it again from the desktop-widget editor.
+Re-enabling a plugin can reset its saved placement, so re-check the box position
+after toggling the plugin.
+
+Manual install:
 
 ```bash
+ln -sfn /path/to/lgl-dualsense-fork ~/.local/share/noctalia-kwe/plugins/dualsense
+noctalia-kwe msg config-reload
 noctalia-kwe msg plugins enable deadYokai/dualsense
-noctalia-kwe msg plugins list | grep deadYokai/dualsense
 ```
 
-The result must include `enabled`. Next open **Settings → Desktop → Toggle
-Editor**, add **DualSense Battery**, position it, and leave the editor. Configure
-the card from its widget settings. Restart Noctalia once if the plugin was
-installed while the shell was already running and the entry does not appear.
+Then open **Settings → Desktop → Toggle Editor** and add **Gamepad Display**.
 
-### Configure the widget
-
-You do **not** need to edit a TOML file.
-
-1. Open **Noctalia Settings → Desktop → Toggle Editor**.
-2. Add **DualSense Battery** if it is not already on the desktop.
-3. Select the widget in the editor and use its settings panel to change colours,
-   opacity, profile controls and visibility options.
-4. Leave the editor when positioning is complete.
-5. Open **Noctalia Settings → Plugins → DualSense Battery** for shared settings
-   such as the low-battery threshold and notification toggle.
-
-Noctalia saves these choices automatically. Its generated settings file is at
-`~/.local/state/noctalia-kwe/settings.toml` for KWE or
-`~/.local/state/noctalia/settings.toml` upstream. Those paths are useful for
-backups and troubleshooting; manual editing is not required and is discouraged
-while Noctalia is running because the shell may overwrite the file.
+A box of roughly **240 × 152** logical pixels shows the full card at 100% scale
+on a 1080p output. The widget scales its content down if the box is smaller.
 
 ## Settings
 
-| Setting | Scope | Default | Description |
-| --- | --- | --- | --- |
-| `low_threshold` | plugin | `20` | Percentage at or below which the card shows the low state and the service may notify. |
-| `notify_low` | plugin | `true` | Send one desktop notification when the battery first drops to the threshold. |
-| `illustration_color` | desktop widget | `#e8ebef` | Controller line-art colour. |
-| `controller_body_color` | desktop widget | `#2c3035` | Controller body fill colour. |
-| `controller_body_opacity` | desktop widget | `1.0` | Controller body fill opacity (`0` = transparent line art, `1` = solid). |
-| `controller_stroke_width` | desktop widget | `2.8` | Controller outline and touchpad/button edge thickness (`0.5`–`8`). |
-| `lightbar_color_mode` | desktop widget | `ds4u` | `ds4u` follows the active profile's lightbar colour; `custom` uses `lightbar_color`. |
-| `lightbar_color` | desktop widget | `#0080ff` | Lightbar accent colour when `lightbar_color_mode = "custom"`. Accepts a hex value or any Noctalia palette role. |
-| `lightbar_width` | desktop widget | `3.0` | Lightbar strip thickness beside the touchpad (`0.5`–`8`). |
-| `profile_settings_opacity` | desktop widget | `0.65` | Opacity of the ds4u settings button background (`0`–`1`); the cog remains fully opaque. |
-| `battery_color_mode` | desktop widget | `lightbar` | `lightbar` uses the active `ds4u` profile lightbar colour; `connection` uses link colours; `custom` uses `battery_fill_color`. |
-| `battery_fill_color` | desktop widget | `#0080ff` | Custom battery fill colour, used when `battery_color_mode = "custom"`. |
-| `battery_fill_opacity` | desktop widget | `1.0` | Battery fill opacity (`0` = transparent, `1` = solid). |
-| `battery_low_color` | desktop widget | `#ed4c4c` | Low-battery fill, percentage and marker colour. Always wins when low. |
-| `text_color` | desktop widget | `on_surface` | Percentage, status text, marker and active player LEDs. |
-| `muted_text_color` | desktop widget | `on_surface_variant` | Percentage sign, profile label, model badge and inactive player LEDs. |
-| `show_battery_bar` | desktop widget | `true` | Show the vertical battery bar. When off, the bar is hidden and the controller content is centred. |
-| `show_percentage` | desktop widget | `true` | Show the battery percentage below the controller. |
-| `show_status` | desktop widget | `true` | Show the connection, charging and low-battery status line below the controller. |
-| `show_live_inputs` | desktop widget | `true` | Overlay live button presses, stick movement, trigger pulls and touchpad points on the controller. |
-| `input_highlight_color` | desktop widget | `primary` | Highlight colour for the live input overlay. Accepts a hex value or any Noctalia palette role. |
-| `show_profile` | desktop widget | `true` | Show the active `ds4u` profile dropdown for direct profile selection. |
-| `show_player_leds` | desktop widget | `true` | Show the 5-segment DualSense player indicator LEDs. |
-| `show_model_badge` | desktop widget | `true` | Show a `DualSense Edge` label when a DualSense Edge controller is connected. |
+Plugin-level (shared by the battery service and widget):
 
-With `show_battery_bar = false`, the battery graphic is omitted and the
-controller, percentage and status column is centred in the card. The percentage
-and status line can be hidden independently with `show_percentage` and
-`show_status`.
+| Key | Default | Description |
+| --- | --- | --- |
+| `low_threshold` | `20` | Show the low-battery state and notify at or below this percentage |
+| `notify_low` | `true` | Send a desktop notification when the battery first reaches the threshold |
 
-## How it works
+Desktop widget:
 
-1. **`ds4u` Daemon IPC (`$XDG_RUNTIME_DIR/ds4u.socket`)**: When `ds4u --daemon`
-   is running, `code/ds_battery_daemon.py` queries it over its Unix socket
-   (`GetControllerInfo`, `GetBattery`, `GetInputState`, `GetActiveProfile`,
-   `ListProfiles`) so both tools coexist without competing for `/dev/hidraw*`
-   reads.
-2. **Direct HID & Kernel Fallbacks**: When `ds4u --daemon` is not running, the
-   daemon reads DualSense USB (`0x01`, byte `53`) and Bluetooth (`0x31`, byte
-   `54`) input reports directly, with fallbacks to Linux's `hid-playstation`
-   `/sys/class/power_supply/ps-controller-battery*` and BlueZ `org.bluez.Battery1`.
-3. **Profile & Rumble Actions**:
-   - Selecting a profile from the card dropdown switches directly among profiles
-     in `~/.config/ds4u/profiles/` (via `SwitchProfile` IPC when `ds4u --daemon`
-     is running, or by updating `~/.config/ds4u/settings.json` and sending a
-     DualSense HID output report with the profile's lightbar RGB and player LED
-     pattern). The settings button beside the dropdown opens `ds4u`, where you
-     can create and edit profiles; saved profiles then appear in the dropdown.
-   - Clicking the controller illustration rumbles the controller (`SetRumble`
-     IPC or direct HID output report `0x02` / `0x31` with CRC-32).
+| Key | Default | Description |
+| --- | --- | --- |
+| `accent_color` | `primary` | Stick dots, trigger fills and pressed highlights |
+| `text_color` | `on_surface` | Model name and labels |
+| `muted_text_color` | `on_surface_variant` | Battery text, unpressed glyphs and hints |
+| `show_battery` | `true` | Show the battery percentage and charging glyph in the header |
+| `illustration_color` | `#e8ebef` | Controller line-art colour |
+| `controller_body_color` | `#2c3035` | Controller body fill |
+| `controller_body_opacity` | `1.0` | Body fill opacity (`0` = line art only) |
+| `controller_stroke_width` | `2.8` | Outline and button-edge thickness (`0.5`–`8`) |
 
-### ds4u lightbar matching
+Colour settings accept a `#rrggbb` value or a Noctalia palette role such as
+`primary`, `on_surface` or `on_surface_variant`. Palette roles follow the live
+theme; the generated artwork is rewritten when a colour changes.
 
-The widget reads the active profile under `~/.config/ds4u/profiles/` and applies
-the same `lightbar_brightness / 255` channel scaling as `ds4u`. For example,
-full blue with brightness `128` is displayed as `#000080`, not `#0000ff`.
-Restart the widget service after editing profile JSON manually, or switch
-profiles normally so the state refreshes. The DualSense input report does not
-report the current lightbar RGB, so continuously animated effects that are not
-exposed by `ds4u` IPC cannot be sampled exactly; the card shows the profile's
-effective static colour.
+## Diagnostics
 
-The touchpad accent strips follow that profile colour by default. Set
-`lightbar_color_mode = "custom"` to use `lightbar_color` instead: the colour
-picker lists every Noctalia palette role and also accepts a custom hex value.
-`lightbar_width` controls the strip thickness independently of the controller
-outline. The battery fill's `lightbar` colour mode and the profile swatch keep
-mirroring the controller's actual `ds4u` colour; the override only changes the
-illustration.
+Runtime state:
 
-### Live input visualisation
-
-The controller drawing can show live input: face buttons, D-pad, shoulders,
-PS/touchpad/mute, both sticks, L2/R2 trigger bars and active touchpad points.
-When `ds4u --daemon` is running the widget polls `GetInputState` over its Unix
-socket; otherwise it reads the same fields directly from the HID input reports.
-The overlay refreshes at about 30 Hz and only redraws when the input changes.
-
-`show_live_inputs = false` keeps the static illustration and disables the
-overlay. `input_highlight_color` sets the highlight colour and accepts any
-Noctalia palette role or a hex value. The overlay only renders while the
-controller is connected and its state is fresh.
-
-## IPC
-
-The service entry is `deadYokai/dualsense:battery` and, because services are
-not tied to a monitor, its target must be `all`. The CLI returning
-`ok: dispatched 1` confirms delivery to `onIpc`.
-
-Rumble the controller:
-
-```bash
-noctalia-kwe msg plugin deadYokai/dualsense:battery all buzz
+```text
+$XDG_RUNTIME_DIR/noctalia-dualsense-inputs.json   # model, connection, battery, buttons, sticks
+$XDG_RUNTIME_DIR/noctalia-dualsense-inputs.lock
+$XDG_RUNTIME_DIR/noctalia-dualsense-battery.json
+$XDG_RUNTIME_DIR/noctalia-dualsense-battery.lock
 ```
 
-Cycle to the next `ds4u` profile:
+Read the live state:
 
 ```bash
-noctalia-kwe msg plugin deadYokai/dualsense:battery all cycle-profile
+jq . "$XDG_RUNTIME_DIR/noctalia-dualsense-inputs.json"
 ```
 
-Switch to a specific `ds4u` profile:
+Run the input daemon manually (stop the service first, otherwise the lock makes
+the manual copy exit):
 
 ```bash
-noctalia-kwe msg plugin deadYokai/dualsense:battery all switch-profile Default
+python3 code/ds_inputs_daemon.py            # keep the state file fresh
+python3 code/ds_inputs_daemon.py --stream   # print one JSON line per frame
+python3 code/ds_inputs_daemon.py --demo     # fake pad for layout work
 ```
 
-Restart the daemon:
+Service logs:
 
 ```bash
-noctalia-kwe msg plugin deadYokai/dualsense:battery all restart
+journalctl --user -f | grep -i dualsense
 ```
 
-For upstream Noctalia, replace `noctalia-kwe` with `noctalia`.
+## Troubleshooting
 
-If a command does not act on the controller:
+| Symptom | Fix |
+| --- | --- |
+| “Waiting for controller” | Check `/dev/input/event*` permissions with `evtest`; the daemon rescans every 2 seconds |
+| Wrong controller shown | Touch or press the pad you want; the last active pad wins |
+| No battery on an 8BitDo USB receiver | The xpad receiver exposes no battery node; Bluetooth mode reports battery through BlueZ |
+| DualShock 4 over Bluetooth not detected | Use USB; the DS4 does not answer BlueZ's generic SDP browse reliably |
+| Sony battery missing | Install the hidraw udev rule and reconnect, or install `ds4u` |
+| Widget blank after a config change | `noctalia-kwe msg config-reload`; manifest changes need `plugins disable` + `plugins enable` |
+| Widget says Python is missing | Install `python3`; the plugin uses only the standard library |
+| Plugin disabled itself after install | Enable `deadYokai/dualsense` in Settings → Plugins |
 
-```bash
-# Must show the plugin as enabled.
-noctalia-kwe msg plugins list | grep deadYokai/dualsense
+## Fork notes
 
-# Must print: ok: dispatched 1
-noctalia-kwe msg plugin deadYokai/dualsense:battery all buzz
+This fork extends the upstream LGL DualSense card with:
 
-# Test the action independently of Noctalia (from this repository).
-python3 dualsense/code/ds_battery_daemon.py --buzz
-echo $?
-```
+- DualShock 4 (USB) and 8BitDo Ultimate 2C (Bluetooth + USB receiver) support
+- a kernel-evdev input reader that never touches hidraw
+- capability-driven axis mapping and the 8BitDo Bluetooth face-button remap
+- model-specific controller artwork and Xbox letter buttons
+- a centered header with model name, battery and connection state
+- the **Gamepad Display** widget name and input-focused settings surface
 
-An IPC response such as `no plugin entry matched` means the plugin is disabled,
-the shell needs restarting, or the entry/target was typed incorrectly. A
-successful dispatch followed by no rumble means IPC is working; check that the
-controller is connected, `ds4u --daemon` has created
-`$XDG_RUNTIME_DIR/ds4u.socket`, or the hidraw access test above succeeds. The
-direct Python command exits `0` on success and `1` when neither path can control
-the device.
+The old battery-only desktop card is no longer registered; the battery service
+and its notifications are still included.
 
-## Credits and License
+## Credits and licence
 
-Thanks to Jahrek for the Steam Controller Plasma widget that inspired the card
-approach, and to deadYokai for the DualSense work in `ds4u`. LGL adapted and
-integrated these ideas for Noctalia and Noctalia KWE.
+Controller protocol and `ds4u` integration informed by deadYokai's
+[ds4u](https://git.yokai.digital/deadYokai/ds4u). The desktop-card approach was
+inspired by Jahrek's
+[Steam Controller Plasma widget](https://github.com/jahrekza/steam-controller-plasma-widget).
+Packaged for Noctalia by LGL; this fork maintains the gamepad input display.
 
 MIT — see [LICENSE](LICENSE).

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Removes the DualSense plugin from KineticWE's noctalia-kwe fork.
+# Removes the Gamepad Display plugin from KineticWE's noctalia-kwe fork.
 # noctalia-kwe installs plugins in ~/.local/share/noctalia-kwe/plugins and
 # writes widget instances to ~/.local/state/noctalia-kwe/settings.toml.
 set -euo pipefail
@@ -15,17 +15,20 @@ SETTINGS="$STATE_HOME/$APP_DIR/settings.toml"
 PLUGIN_DATA="$STATE_HOME/$APP_DIR/plugins/data/deadYokai/dualsense"
 LOCK="$RUNTIME_DIR/noctalia-dualsense-battery.lock"
 STATE="$RUNTIME_DIR/noctalia-dualsense-battery.json"
+INPUT_LOCK="$RUNTIME_DIR/noctalia-dualsense-inputs.lock"
+INPUT_STATE="$RUNTIME_DIR/noctalia-dualsense-inputs.json"
 ASSUME_YES=0
 
 usage() {
     cat <<EOF
 Usage: $(basename "$0") [--yes]
 
-Removes the DualSense plugin from noctalia-kwe:
+Removes the Gamepad Display plugin from noctalia-kwe:
   $PLUGIN_DIR
   $PLUGIN_DATA
   its desktop widget instances in $SETTINGS
-  $LOCK and $STATE
+  $LOCK, $STATE
+  $INPUT_LOCK and $INPUT_STATE
 
 Options:
   -y, --yes   Do not ask for confirmation
@@ -42,11 +45,12 @@ for arg in "$@"; do
 done
 
 if [ "$ASSUME_YES" -ne 1 ]; then
-    echo "This will remove the DualSense plugin:"
+    echo "This will remove the Gamepad Display plugin:"
     echo "  $PLUGIN_DIR"
     echo "  $PLUGIN_DATA"
     echo "  its desktop widget instances in $SETTINGS"
-    echo "  $LOCK and $STATE"
+    echo "  $LOCK, $STATE"
+    echo "  $INPUT_LOCK and $INPUT_STATE"
     read -r -p "Continue? [y/N] " reply
     case "$reply" in
         y|Y|yes|YES) ;;
@@ -67,23 +71,29 @@ fi
 if [ -f "$SETTINGS" ] && command -v python3 >/dev/null 2>&1 \
     && [ -f "$SCRIPT_DIR/remove-plugin-widgets.py" ]; then
     python3 "$SCRIPT_DIR/remove-plugin-widgets.py" \
+        "$SETTINGS" "deadYokai/dualsense:inputs" || true
+    python3 "$SCRIPT_DIR/remove-plugin-widgets.py" \
         "$SETTINGS" "deadYokai/dualsense:card" || true
 else
     echo "==> Skipping widget cleanup (no settings file, python3, or helper)"
 fi
 
 # Kill a daemon left behind if the service was not running.
-if [ -f "$LOCK" ]; then
-    PID="$(tr -dc '0-9' < "$LOCK" || true)"
-    if [ -n "$PID" ] && [ "$PID" -gt 1 ] 2>/dev/null; then
-        if [ -r "/proc/$PID/cmdline" ] \
-            && tr '\0' ' ' < "/proc/$PID/cmdline" | grep -q "ds_battery_daemon.py"; then
-            kill "$PID" 2>/dev/null || true
+kill_daemon() {
+    local lock="$1" pattern="$2" pid
+    [ -f "$lock" ] || return 0
+    pid="$(tr -dc '0-9' < "$lock" || true)"
+    if [ -n "$pid" ] && [ "$pid" -gt 1 ] 2>/dev/null; then
+        if [ -r "/proc/$pid/cmdline" ] \
+            && tr '\0' ' ' < "/proc/$pid/cmdline" | grep -q "$pattern"; then
+            kill "$pid" 2>/dev/null || true
             sleep 0.3
         fi
     fi
-fi
-rm -f "$LOCK" "$STATE"
+}
+kill_daemon "$LOCK" "ds_battery_daemon.py"
+kill_daemon "$INPUT_LOCK" "ds_inputs_daemon.py"
+rm -f "$LOCK" "$STATE" "$INPUT_LOCK" "$INPUT_STATE"
 
 rm -rf "$PLUGIN_DIR" "$PLUGIN_DATA"
 echo "==> Removed $PLUGIN_DIR"

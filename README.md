@@ -37,7 +37,7 @@ other Noctalia users can install it easily.
 | App | What it does | Plugin API | Licence |
 |---|---|---:|---|
 | [**LGL AI Usage**](apps/lgl-ai-usage/) | Shows AI limits, spend, balances, and local OpenCode statistics in desktop, bar, and panel views[^ai-usage] | 24 | GPL-3.0-or-later |
-| [**LGL DualSense Battery**](apps/lgl-dualsense/) | Shows DualSense battery and connection state with live input visualisation, lightbar, player LED, and optional `ds4u` profile controls[^dualsense] | 17 | MIT |
+| [**LGL Gamepad Display**](apps/lgl-dualsense/) | Live controller artwork, buttons, sticks, triggers, D-pad and battery for DualSense, DualShock 4, 8BitDo and XInput pads[^dualsense] | 17 | MIT |
 | [**LGL Modern SysMonitor Plus**](apps/lgl-modern-sysmonitor-plus/) | Monitors CPU, GPU, memory, disks, fans, temperatures, and network activity[^sysmonitor] | 22 | GPL-2.0-or-later |
 | [**LGL Steam Controller Battery**](apps/lgl-steam-controller/) | Shows Steam Controller 2 battery, charging, connection, wireless signal and live input state[^steam-controller] | 17 | MIT |
 
@@ -96,7 +96,7 @@ git sparse-checkout set apps/lgl-ai-usage
 ./apps/lgl-ai-usage/install.sh      # Upstream Noctalia
 ```
 
-#### LGL DualSense Battery
+#### LGL Gamepad Display
 
 ```bash
 git sparse-checkout set apps/lgl-dualsense

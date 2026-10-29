@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the DualSense plugin for KineticWE's noctalia-kwe fork.
+# Installs the Gamepad Display plugin for KineticWE's noctalia-kwe fork.
 # noctalia-kwe reads plugins from ~/.local/share/noctalia-kwe/plugins.
 set -euo pipefail
 
@@ -29,18 +29,18 @@ echo "==> Installed noctalia-kwe plugin at $PLUGIN_DIR"
 # Refresh and enable when the shell is running. Skip the live calls if
 # NOCTALIA_DATA_HOME points at a non-default location.
 if [ -n "${NOCTALIA_DATA_HOME:-}" ]; then
-    echo "==> NOCTALIA_DATA_HOME is set; enable 'DualSense Battery' manually"
+    echo "==> NOCTALIA_DATA_HOME is set; enable 'Gamepad Display' manually"
 elif command -v "$CLI" >/dev/null 2>&1 && "$CLI" msg config-reload >/dev/null 2>&1; then
     sleep 0.3
     if "$CLI" msg plugins enable deadYokai/dualsense >/dev/null 2>&1; then
         echo "==> Enabled deadYokai/dualsense"
     else
-        echo "==> Enable 'DualSense Battery' in Settings -> Plugins"
+        echo "==> Enable 'Gamepad Display' in Settings -> Plugins"
     fi
 else
-    echo "==> $CLI is not running; enable 'DualSense Battery' in Settings -> Plugins"
+    echo "==> $CLI is not running; enable 'Gamepad Display' in Settings -> Plugins"
 fi
 
 echo
 echo "Next: open Settings -> Desktop -> Toggle Editor and add"
-echo "      'DualSense Battery'."
+echo "      'Gamepad Display'."
