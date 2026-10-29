@@ -240,6 +240,8 @@ journalctl --user -f | grep -i dualsense
 
 ## Fork notes
 
+Published fork: <https://github.com/tylorismusic-commits/lgl-noctalia-widgets>
+
 This fork extends the upstream LGL DualSense card with:
 
 - DualShock 4 (USB) and 8BitDo Ultimate 2C (Bluetooth + USB receiver) support
