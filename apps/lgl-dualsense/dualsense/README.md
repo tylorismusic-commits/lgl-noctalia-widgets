@@ -49,8 +49,10 @@ pad in also takes it over. Until something is touched, Sony pads win over
   `ABS_Z`/`ABS_RZ`/`ABS_GAS`/`ABS_BRAKE` layout works without a special case.
   On that layout `ABS_BRAKE` is the left trigger and `ABS_GAS` the right one,
   matching the pedal convention; verified on an Ultimate 2C over Bluetooth.
-- **8BitDo Bluetooth fix** — Switch-ordered face buttons are remapped
-  automatically when the pad reports the extra `BTN_C` code.
+- **8BitDo and XInput face buttons** — Xbox-layout pads report physical X
+  (left) as `BTN_NORTH` and Y (top) as `BTN_WEST`, the opposite of the
+  PlayStation positions, so those codes are swapped automatically. Sony pads
+  keep their triangle/square layout and shapes.
 - **Battery in the header** — percentage plus charging and USB/Bluetooth
   glyphs, read from kernel `power_supply` (Sony) or BlueZ `Battery1`
   (Bluetooth pads). XInput receivers without a battery node simply omit it.
@@ -248,7 +250,7 @@ This fork extends the upstream LGL DualSense card with:
 
 - DualShock 4 (USB) and 8BitDo Ultimate 2C (Bluetooth + USB receiver) support
 - a kernel-evdev input reader that never touches hidraw
-- capability-driven axis mapping and the 8BitDo Bluetooth face-button remap
+- capability-driven axis mapping and the Xbox-style face-button remap
 - model-specific controller artwork and Xbox letter buttons
 - a centered header with model name, battery and connection state
 - the **Gamepad Display** widget name and input-focused settings surface

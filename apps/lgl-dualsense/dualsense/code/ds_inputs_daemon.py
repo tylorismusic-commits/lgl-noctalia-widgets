@@ -373,15 +373,16 @@ def button_codes(fd, maxcode=0x140):
 def button_map_for(fd, model):
     """Return the evdev-code -> widget-button map for this pad.
 
-    8BitDo's generic Bluetooth report is Switch-ordered, so the left face
-    button arrives as BTN_NORTH and the top one as BTN_WEST. That layout is
-    recognisable by its extra BTN_C (0x132); the USB receiver (xpad) and Sony
-    pads use the standard order and need no remap.
+    Linux aliases the Xbox face buttons onto the PlayStation position codes:
+    BTN_X (physical left) is BTN_NORTH 0x133 and BTN_Y (physical top) is
+    BTN_WEST 0x134. Sony pads use those same codes for triangle (top) and
+    square (left), so only Xbox-style pads (8BitDo and XInput) need the swap.
+    This applies to both the 8BitDo Bluetooth report and its USB receiver.
     """
-    if model == "8bitdo" and 0x132 in button_codes(fd):
+    if model in ("8bitdo", "xinput"):
         mapping = dict(BTN_CODES)
-        mapping[0x133] = "square"    # BTN_NORTH = physical left
-        mapping[0x134] = "triangle"  # BTN_WEST = physical top
+        mapping[0x133] = "square"    # BTN_NORTH = physical left (X)
+        mapping[0x134] = "triangle"  # BTN_WEST = physical top (Y)
         return mapping
     return BTN_CODES
 
