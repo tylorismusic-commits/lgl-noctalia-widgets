@@ -1,6 +1,6 @@
 <div align="center">
 
-# LGL Gamepad Display
+# Gamepad Display
 
 **Live controller artwork, inputs, and battery for Noctalia desktop.**
 
