@@ -110,3 +110,17 @@ entry = "inputs_card.luau"
   min             = 0.5
   max             = 8.0
   step            = 0.1
+
+  [[desktop_widget.setting]]
+  key             = "vertical_layout"
+  type            = "bool"
+  label_key       = "settings.vertical_layout.label"
+  description_key = "settings.vertical_layout.description"
+  default         = false
+
+  [[desktop_widget.setting]]
+  key             = "show_inputs"
+  type            = "bool"
+  label_key       = "settings.show_inputs.label"
+  description_key = "settings.show_inputs.description"
+  default         = true

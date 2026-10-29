@@ -13,6 +13,8 @@ local settings = {
   text_color = noctalia.getConfig("text_color") or "on_surface",
   muted_text_color = noctalia.getConfig("muted_text_color") or "on_surface_variant",
   show_battery = noctalia.getConfig("show_battery"),
+  vertical_layout = noctalia.getConfig("vertical_layout"),
+  show_inputs = noctalia.getConfig("show_inputs"),
   illustration_color = noctalia.getConfig("illustration_color") or "#e8ebef",
   controller_body_color = noctalia.getConfig("controller_body_color") or "#2c3035",
   controller_body_opacity = tonumber(noctalia.getConfig("controller_body_opacity")) or 1.0,
@@ -29,6 +31,12 @@ if settings.muted_text_color == "" then
 end
 if settings.show_battery == nil then
   settings.show_battery = true
+end
+if settings.vertical_layout == nil then
+  settings.vertical_layout = false
+end
+if settings.show_inputs == nil then
+  settings.show_inputs = true
 end
 
 local SHAPE = {
@@ -529,6 +537,9 @@ local function header(s)
     ui.row({ key = "header-status-row", gap = 6, align = "center", justify = "center" }, status),
   }))
 
+  if settings.vertical_layout then
+    return ui.column({ key = "header", gap = 6, width = CARD_W, align = "center", justify = "center" }, children)
+  end
   return ui.row({ key = "header", gap = 8, width = CARD_W, align = "center", justify = "center" }, children)
 end
 
@@ -546,12 +557,43 @@ local function shoulders(s)
   })
 end
 
+local function shoulders_vertical(s)
+  return ui.row({ key = "shoulders-vertical", width = CARD_W, gap = 6, align = "center", justify = "center" }, {
+    ui.column({ key = "shoulder-left", gap = 4, align = "center" }, {
+      trigger_column("l2", "L2", axis("triggers", "l2"), false),
+      pill("l1", "L1", button("l1")),
+    }),
+    ui.column({ key = "shoulder-mid", gap = 4, align = "center", justify = "center" }, {
+      mini_button("create", "menu-2", button("create")),
+      mini_button("ps", "circle-dot", button("ps")),
+      mini_button("mute", "microphone-off", button("mute")),
+    }),
+    ui.column({ key = "shoulder-right", gap = 4, align = "center" }, {
+      trigger_column("r2", "R2", axis("triggers", "r2"), true),
+      pill("r1", "R1", button("r1")),
+    }),
+  })
+end
+
 local function body()
   return ui.row({ key = "body", width = CARD_W, gap = GAP, align = "center", justify = "center" }, {
     stick_node("stick-l", axis("sticks", "lx"), axis("sticks", "ly"), button("l3")),
     dpad_node(),
     face_node(),
     stick_node("stick-r", axis("sticks", "rx"), axis("sticks", "ry"), button("r3")),
+  })
+end
+
+local function body_vertical()
+  return ui.column({ key = "body-vertical", width = CARD_W, gap = GAP, align = "center", justify = "center" }, {
+    ui.row({ key = "vertical-dpad-face", gap = GAP, align = "center", justify = "center" }, {
+      dpad_node(),
+      face_node(),
+    }),
+    ui.row({ key = "vertical-sticks", gap = GAP, align = "center", justify = "center" }, {
+      stick_node("stick-l", axis("sticks", "lx"), axis("sticks", "ly"), button("l3")),
+      stick_node("stick-r", axis("sticks", "rx"), axis("sticks", "ry"), button("r3")),
+    }),
   })
 end
 
@@ -584,7 +626,13 @@ render = function()
 
   local children
   if s then
-    children = { header(s), shoulders(s), body() }
+    children = { header(s) }
+    if settings.show_inputs ~= false then
+      local shoulders_node = settings.vertical_layout and shoulders_vertical(s) or shoulders(s)
+      local body_node = settings.vertical_layout and body_vertical() or body()
+      table.insert(children, shoulders_node)
+      table.insert(children, body_node)
+    end
   else
     children = { placeholder() }
   end

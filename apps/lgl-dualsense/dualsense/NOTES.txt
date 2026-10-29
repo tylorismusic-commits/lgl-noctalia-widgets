@@ -1,0 +1,159 @@
+Gamepad Display - local notes
+=============================
+Last updated: 2026-10-28
+
+WHAT THIS FOLDER IS
+-------------------
+This is the live Noctalia plugin, not a spare copy. The shell loads it through:
+
+  ~/.local/share/noctalia-kwe/plugins/dualsense
+      -> /home/tylor/Projects/lgl-dualsense-fork
+
+Deleting or moving this folder breaks the widget. The published source lives on
+GitHub (see below).
+
+  Plugin ID     deadYokai/dualsense
+  Display name  Gamepad Display
+  Version       1.2.0
+  Plugin API    17
+  Entries       services "battery" and "listener", desktop widget "inputs"
+
+The old battery-only desktop card is not registered. The battery service still
+runs and can send low-battery notifications; the widget gets its battery readout
+from the input service.
+
+WHAT IT SUPPORTS
+----------------
+  DualSense / DualSense Edge  USB + Bluetooth
+  DualShock 4                 USB (Bluetooth discovery is unreliable)
+  8BitDo Ultimate 2C          Bluetooth + USB receiver
+  Generic XInput-style pad    USB + Bluetooth
+
+The last pad touched is the one shown. Virtual pads (Sunshine, libvirtualhid,
+uinput, Steam virtual) and Sony motion/touchpad nodes are ignored.
+
+8BITDO QUIRKS (already handled in code)
+---------------------------------------
+Bluetooth (2dc8:301b), D-input layout:
+  - right stick   ABS_Z / ABS_RZ
+  - triggers      ABS_BRAKE = LEFT, ABS_GAS = RIGHT
+  - face buttons  Xbox order, so X/Y are swapped from the PlayStation codes
+
+USB receiver (2dc8:310a), xpad layout:
+  - standard ABS_RX/RY sticks and ABS_Z/RZ triggers
+  - same X/Y face-button swap as above
+  - no battery node, so no battery percentage in USB mode
+
+DualSense and DualShock 4 keep their PlayStation glyphs. 8BitDo and XInput pads
+show Xbox A/B/X/Y letters. These mappings were verified live on the hardware.
+
+HOW TO CHECK THAT IT IS RUNNING
+-------------------------------
+  noctalia-kwe msg plugins list | grep dualsense
+
+  jq . "$XDG_RUNTIME_DIR/noctalia-dualsense-inputs.json"
+  jq . "$XDG_RUNTIME_DIR/noctalia-dualsense-battery.json"
+
+Runtime files:
+  $XDG_RUNTIME_DIR/noctalia-dualsense-inputs.json   # live model/buttons/sticks
+  $XDG_RUNTIME_DIR/noctalia-dualsense-inputs.lock
+  $XDG_RUNTIME_DIR/noctalia-dualsense-battery.json
+  $XDG_RUNTIME_DIR/noctalia-dualsense-battery.lock
+
+Generated controller art (safe to delete, it is regenerated):
+  ~/.local/state/noctalia-kwe/plugins/data/deadYokai/dualsense/
+
+WIDGET PLACEMENT
+----------------
+Saved in ~/.local/state/noctalia-kwe/settings.toml:
+
+  type                deadYokai/dualsense:inputs
+  output              HDMI-A-3
+  box_width           240
+  box_height          152
+  cx                  1790
+  cy                  994
+  background_opacity  0.62
+
+Toggle "Vertical layout" in the widget settings to stack the controller image
+above the name, the triggers above L1/R1, and the sticks below the face buttons.
+Toggle "Show input display" to hide the live inputs and keep only the header.
+
+  noctalia-kwe msg desktop-widgets-toggle-edit
+
+HOW TO RESTART THE INPUT READER
+-------------------------------
+The listener service restarts the daemon automatically after ~20 seconds without
+output. To force it, kill the PID in the lock file (do not kill the shell):
+
+  kill "$(tr -dc '0-9' < "$XDG_RUNTIME_DIR/noctalia-dualsense-inputs.lock")"
+
+Toggling the whole plugin also works, but re-enabling can reset the widget's
+saved placement:
+
+  noctalia-kwe msg plugins disable deadYokai/dualsense
+  noctalia-kwe msg plugins enable deadYokai/dualsense
+
+Hot reload:
+  - .luau edits apply in about half a second
+  - plugin.toml changes need plugins disable + enable
+  - settings.toml placement changes need: noctalia-kwe msg config-reload
+
+RUN THE DAEMON BY HAND (service must be stopped first, or the lock blocks it)
+---------------------------------------------------------------------------
+  python3 code/ds_inputs_daemon.py            # keep state file fresh
+  python3 code/ds_inputs_daemon.py --stream   # one JSON line per frame
+  python3 code/ds_inputs_daemon.py --demo     # fake pad for layout work
+
+Python 3 standard library only. The input reader uses /dev/input/event* and
+never opens hidraw, so it does not fight ds4u or the battery daemon.
+
+If no controller is detected, test the node permissions:
+
+  ls -l /dev/input/event*
+  sudo evtest /dev/input/eventN
+
+Or grant access permanently (then log out and back in):
+
+  sudo usermod -aG input "$USER"
+
+The 70-dualsense.rules file in this folder is optional. It is only for the
+battery service's direct Sony hidraw reads, not for the live input display.
+
+PEOPLE-CAN'T-SEE-MY-CHANGES (GitHub backup)
+-------------------------------------------
+Published fork:
+  https://github.com/tylorismusic-commits/lgl-noctalia-widgets
+
+Branches "main" and "gamepad-display" both carry the current code. The plugin
+source in the repo is under:
+  apps/lgl-dualsense/dualsense/
+
+The local sync helper was removed after the last publish. To work on it again,
+pull a fresh checkout and reinstall:
+
+  git clone https://github.com/tylorismusic-commits/lgl-noctalia-widgets.git \
+      ~/Projects/lgl-noctalia-widgets
+  cd ~/Projects/lgl-noctalia-widgets
+  ./apps/lgl-dualsense/install-kwe.sh
+
+That repoints the Noctalia plugin symlink at the new checkout. The old
+~/Projects/lgl-dualsense-fork copy can then be deleted. Do not run an install
+script from an unrelated clone unless you want it to take over the live plugin.
+
+WHAT WAS CHANGED FROM UPSTREAM
+------------------------------
+  - live input widget (buttons, sticks, triggers, D-pad) plus model artwork
+  - kernel-evdev input reader that never uses hidraw
+  - DualShock 4 and 8BitDo Ultimate 2C support
+  - capability-driven axis mapping, including 8BitDo trigger roles
+  - Xbox-layout face-button swap for 8BitDo and XInput pads
+  - centered header with controller art, name and battery
+  - widget renamed to "Gamepad Display"
+  - docs, catalog, install and uninstall scripts updated; version 1.2.0
+
+CREDITS
+-------
+Built on the LGL DualSense card for Noctalia. Controller protocol and ds4u
+integration informed by deadYokai's ds4u. Desktop-card approach inspired by
+Jahrek's Steam Controller Plasma widget. MIT licence; see LICENSE.

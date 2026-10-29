@@ -101,6 +101,14 @@
     "text_color": {
       "description": "Percentage, status text and active player LEDs. Accepts a hex colour or palette role.",
       "label": "Text colour"
+    },
+    "vertical_layout": {
+      "label": "Vertical layout",
+      "description": "Stack the triggers above L1/R1 and the sticks below the face buttons instead of the wide side-by-side layout."
+    },
+    "show_inputs": {
+      "label": "Show input display",
+      "description": "Show the live triggers, buttons, sticks and D-pad below the header."
     }
   },
   "status": {

@@ -191,7 +191,7 @@ Desktop widget:
 | `illustration_color` | `#e8ebef` | Controller line-art colour |
 | `controller_body_color` | `#2c3035` | Controller body fill |
 | `controller_body_opacity` | `1.0` | Body fill opacity (`0` = line art only) |
-| `controller_stroke_width` | `2.8` | Outline and button-edge thickness (`0.5`–`8`) |
+| `controller_stroke_width` | `2.8` | Outline and button-edge thickness (`0.5`–`8`) |\n| `vertical_layout` | `false` | Stack the triggers above L1/R1 and the sticks below the face buttons instead of the wide side-by-side layout |\n| `show_inputs` | `true` | Show the live triggers, buttons, sticks and D-pad below the header |
 
 Colour settings accept a `#rrggbb` value or a Noctalia palette role such as
 `primary`, `on_surface` or `on_surface_variant`. Palette roles follow the live
