@@ -9,7 +9,8 @@ service forwards those lines to the "Gamepad Display" desktop widget.
 Supported out of the box: DualSense, DualSense Edge, DualShock 4 and 8BitDo
 pads (plus any XInput-style pad with a standard evdev mapping). Axis roles are
 derived from each device's capabilities, because e.g. the 8BitDo uses
-ABS_Z/ABS_RZ for its right stick and ABS_GAS/ABS_BRAKE for its triggers.
+ABS_Z/ABS_RZ for its right stick and ABS_BRAKE/ABS_GAS for its left/right
+triggers.
 
 When several pads are connected, the one you touched last is shown; plugging a
 pad in also takes over the widget.
@@ -418,7 +419,8 @@ def axis_maps(fd):
     Sony pads report the right stick as ABS_RX/ABS_RY and the triggers as
     ABS_Z/ABS_RZ. 8BitDo (and other D-input style pads) have no ABS_RX/ABS_RY
     at all: their right stick is ABS_Z/ABS_RZ and the triggers are
-    ABS_GAS/ABS_BRAKE.
+    ABS_GAS/ABS_BRAKE. For those pedals ABS_BRAKE is the left trigger and
+    ABS_GAS the right one; verified on an 8BitDo Ultimate 2C in Bluetooth mode.
     """
     sticks = {}
     triggers = {}
@@ -436,16 +438,17 @@ def axis_maps(fd):
     elif abs_range(fd, ABS_Z) is not None and abs_range(fd, ABS_RZ) is not None:
         sticks[ABS_Z] = "rx"
         sticks[ABS_RZ] = "ry"
-        if abs_range(fd, ABS_GAS) is not None:
-            triggers[ABS_GAS] = "l2"
+        # Brake is the left trigger, gas/accelerator the right one.
         if abs_range(fd, ABS_BRAKE) is not None:
-            triggers[ABS_BRAKE] = "r2"
+            triggers[ABS_BRAKE] = "l2"
+        if abs_range(fd, ABS_GAS) is not None:
+            triggers[ABS_GAS] = "r2"
 
     if not triggers:
-        if abs_range(fd, ABS_GAS) is not None:
-            triggers[ABS_GAS] = "l2"
         if abs_range(fd, ABS_BRAKE) is not None:
-            triggers[ABS_BRAKE] = "r2"
+            triggers[ABS_BRAKE] = "l2"
+        if abs_range(fd, ABS_GAS) is not None:
+            triggers[ABS_GAS] = "r2"
 
     return sticks, triggers
 

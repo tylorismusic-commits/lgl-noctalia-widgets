@@ -47,6 +47,8 @@ pad in also takes it over. Until something is touched, Sony pads win over
 - **Capability-driven mapping** — stick and trigger axes are read from each
   device's evdev capabilities, so the 8BitDo's non-standard
   `ABS_Z`/`ABS_RZ`/`ABS_GAS`/`ABS_BRAKE` layout works without a special case.
+  On that layout `ABS_BRAKE` is the left trigger and `ABS_GAS` the right one,
+  matching the pedal convention; verified on an Ultimate 2C over Bluetooth.
 - **8BitDo Bluetooth fix** — Switch-ordered face buttons are remapped
   automatically when the pad reports the extra `BTN_C` code.
 - **Battery in the header** — percentage plus charging and USB/Bluetooth
