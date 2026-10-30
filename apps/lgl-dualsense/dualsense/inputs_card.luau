@@ -774,18 +774,36 @@ local function header(s)
   end
 
   local children = {}
-  -- Compact mode: trigger bars above the artwork, like the full input display.
-  if settings.icon_buttons then
-    table.insert(children, ui.row({ key = "compact-triggers", gap = 8, align = "center", justify = "center" }, {
-      trigger_column("l2", "L2", axis("triggers", "l2"), false),
-      trigger_column("r2", "R2", axis("triggers", "r2"), true),
-    }))
-  end
   local art = settings.icon_buttons and controller_art_live(s.model) or controller_art(s.model)
-  if art then
+  if settings.icon_buttons then
+    -- Compact mode: trigger bars always above the artwork, regardless of
+    -- vertical_layout.
+    local art_w = 120
+    local art_h = 90
+    local art_node = nil
+    if art then
+      art_node = ui.image({
+        key = "controller-art",
+        path = art,
+        width = art_w,
+        height = art_h,
+        fit = "contain",
+      })
+    end
+    local compact_children = {
+      ui.row({ key = "compact-triggers", gap = 8, align = "center", justify = "center" }, {
+        trigger_column("l2", "L2", axis("triggers", "l2"), false),
+        trigger_column("r2", "R2", axis("triggers", "r2"), true),
+      }),
+    }
+    if art_node then
+      table.insert(compact_children, art_node)
+    end
+    table.insert(children, ui.column({ key = "compact-art-block", gap = 4, align = "center" }, compact_children))
+  elseif art then
     -- Icon mode is the whole point of the artwork, so give it more room.
-    local art_w = settings.icon_buttons and 120 or 76
-    local art_h = settings.icon_buttons and 90 or 57
+    local art_w = 76
+    local art_h = 57
     table.insert(children, ui.image({
       key = "controller-art",
       path = art,
