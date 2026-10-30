@@ -106,13 +106,14 @@
       "label": "Vertical layout",
       "description": "Stack the triggers above L1/R1 and the sticks below the face buttons instead of the wide side-by-side layout."
     },
-    "show_inputs": {
-      "label": "Show input display",
-      "description": "Show the live triggers, buttons, sticks and D-pad below the header."
-    },
-    "icon_buttons": {
-      "label": "Light buttons on controller",
-      "description": "Light the face buttons on the controller artwork and hide the separate input display (compact view)."
+    "display_mode": {
+      "label": "Display mode",
+      "description": "Battery only: header and artwork. Compact: lit buttons on the artwork. Full: complete input display.",
+      "option": {
+        "battery": "Battery only",
+        "compact": "Compact",
+        "full": "Full"
+      }
     }
   },
   "status": {

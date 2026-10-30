@@ -119,15 +119,13 @@ entry = "inputs_card.luau"
   default         = false
 
   [[desktop_widget.setting]]
-  key             = "show_inputs"
-  type            = "bool"
-  label_key       = "settings.show_inputs.label"
-  description_key = "settings.show_inputs.description"
-  default         = true
-
-  [[desktop_widget.setting]]
-  key             = "icon_buttons"
-  type            = "bool"
-  label_key       = "settings.icon_buttons.label"
-  description_key = "settings.icon_buttons.description"
-  default         = false
+  key             = "display_mode"
+  type            = "select"
+  label_key       = "settings.display_mode.label"
+  description_key = "settings.display_mode.description"
+  default         = "full"
+  options         = [
+    { value = "battery", label_key = "settings.display_mode.option.battery" },
+    { value = "compact", label_key = "settings.display_mode.option.compact" },
+    { value = "full",    label_key = "settings.display_mode.option.full" },
+  ]

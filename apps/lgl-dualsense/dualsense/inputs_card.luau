@@ -14,8 +14,7 @@ local settings = {
   muted_text_color = noctalia.getConfig("muted_text_color") or "on_surface_variant",
   show_battery = noctalia.getConfig("show_battery"),
   vertical_layout = noctalia.getConfig("vertical_layout"),
-  show_inputs = noctalia.getConfig("show_inputs"),
-  icon_buttons = noctalia.getConfig("icon_buttons"),
+  display_mode = noctalia.getConfig("display_mode"),
   illustration_color = noctalia.getConfig("illustration_color") or "#e8ebef",
   controller_body_color = noctalia.getConfig("controller_body_color") or "#2c3035",
   controller_body_opacity = tonumber(noctalia.getConfig("controller_body_opacity")) or 1.0,
@@ -36,9 +35,12 @@ end
 if settings.vertical_layout == nil then
   settings.vertical_layout = false
 end
-if settings.show_inputs == nil then
-  settings.show_inputs = true
+if settings.display_mode == nil then
+  settings.display_mode = "full"
 end
+local display_mode = settings.display_mode
+settings.icon_buttons = (display_mode == "compact")
+settings.show_inputs = (display_mode == "full")
 if settings.icon_buttons == nil then
   settings.icon_buttons = false
 end
@@ -444,29 +446,25 @@ local function current_sig()
 end
 
 local live_slot = 0
+local last_live_qkey = nil
+local last_live_path = nil
 
 local function controller_art_live(model)
   local sig = current_sig()
   local key = type(model) == "string" and model or "dualsense"
-  local s = full_state()
+  local st = full_state()
   local function axis_val(t, k)
-    if type(s) ~= "table" or type(s[t]) ~= "table" then return 0 end
-    return tonumber(s[t][k]) or 0
+    if type(st) ~= "table" or type(st[t]) ~= "table" then return 0 end
+    return tonumber(st[t][k]) or 0
   end
-  local lx = axis_val("sticks", "lx")
-  local ly = axis_val("sticks", "ly")
-  local rx = axis_val("sticks", "rx")
-  local ry = axis_val("sticks", "ry")
-  -- Quantize stick values so the dot position matches the cache key bucket.
-  lx = quantize(lx, 0.05)
-  ly = quantize(ly, 0.05)
-  rx = quantize(rx, 0.05)
-  ry = quantize(ry, 0.05)
-  -- Quantize to avoid regenerating on tiny changes.
-  local qkey = key .. "|" .. sig .. "|" .. quantize(lx, 0.05) .. "|" .. quantize(ly, 0.05)
-    .. "|" .. quantize(rx, 0.05) .. "|" .. quantize(ry, 0.05)
-  if art_live_cache[qkey] and noctalia.fileExists(art_live_cache[qkey]) then
-    return art_live_cache[qkey]
+  local lx = quantize(axis_val("sticks", "lx"), 0.05)
+  local ly = quantize(axis_val("sticks", "ly"), 0.05)
+  local rx = quantize(axis_val("sticks", "rx"), 0.05)
+  local ry = quantize(axis_val("sticks", "ry"), 0.05)
+  local qkey = key .. "|" .. sig .. "|" .. lx .. "|" .. ly .. "|" .. rx .. "|" .. ry
+  -- If nothing changed, reuse the last path (no regeneration).
+  if qkey == last_live_qkey and last_live_path and noctalia.fileExists(last_live_path) then
+    return last_live_path
   end
   local dir = noctalia.pluginDataDir()
   if not dir then
@@ -474,12 +472,12 @@ local function controller_art_live(model)
   end
   live_slot = (live_slot + 1) % 4
   local path = dir .. "/controller-live-" .. color_key(key) .. "-" .. live_slot .. "-v3.svg"
-  local t0 = os.clock()
   local svg = build_live_svg(key, sig)
   if not svg or not noctalia.writeFile(path, svg) then
     return controller_art(model)
   end
-  art_live_cache[qkey] = path
+  last_live_qkey = qkey
+  last_live_path = path
   return path
 end
 

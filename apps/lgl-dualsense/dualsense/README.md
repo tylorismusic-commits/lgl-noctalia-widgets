@@ -199,8 +199,7 @@ Desktop widget:
 | `controller_body_opacity` | `1.0` | Body fill opacity (`0` = line art only) |
 | `controller_stroke_width` | `2.8` | Outline and button-edge thickness (`0.5`–`8`) |
 | `vertical_layout` | `false` | Stack the triggers above L1/R1 and the sticks below the face buttons instead of the wide side-by-side layout |
-| `show_inputs` | `true` | Show the live triggers, buttons, sticks and D-pad below the header |
-| `icon_buttons` | `false` | Light the face buttons on the controller artwork and hide the separate input display (compact view) |
+| `display_mode` | `full` | `battery` (header + artwork only), `compact` (lit buttons on the artwork + trigger bars) or `full` (complete input display) |
 
 Colour settings accept a `#rrggbb` value or a Noctalia palette role such as
 `primary`, `on_surface` or `on_surface_variant`. Palette roles follow the live
