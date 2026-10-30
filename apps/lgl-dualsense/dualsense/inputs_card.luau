@@ -194,6 +194,9 @@ local function controller_art(model)
     BTN_L3 = "none",
     BTN_R3 = "none",
     STICK_COLOR = lightbar,
+    TRIG_COLOR = lightbar,
+    TRIG_L2 = "0",
+    TRIG_R2 = "0",
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return values[name] or ("{{" .. name .. "}}")
@@ -315,6 +318,7 @@ local function live_base(model, line, body, lightbar, stroke_text, grip_text, op
     STROKE_BODY = stroke_text,
     STROKE_GRIP = grip_text,
     STICK_COLOR = lightbar,
+    TRIG_COLOR = lightbar,
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return static[name] or ("{{" .. name .. "}}")
@@ -389,18 +393,27 @@ local function build_live_svg(model, sig)
   ry = quantize(ry, 0.05)
 
   -- Compute trigger bar widths and stick dot positions per family.
+  local l2 = math.max(0, math.min(1, axis_val("triggers", "l2")))
+  local r2 = math.max(0, math.min(1, axis_val("triggers", "r2")))
+  local trig_l2, trig_r2 = "0", "0"
   local stick_lx, stick_ly, stick_rx, stick_ry = "0", "0", "0", "0"
   if xbox then
+    trig_l2 = string.format("%.1f", l2 * 32)
+    trig_r2 = string.format("%.1f", r2 * 32)
     stick_lx = string.format("%.1f", 35 + lx * 6)
     stick_ly = string.format("%.1f", 33 + ly * 6)
     stick_rx = string.format("%.1f", 85 + rx * 6)
     stick_ry = string.format("%.1f", 52 + ry * 6)
   elseif key == "ds4" then
+    trig_l2 = string.format("%.1f", l2 * 22)
+    trig_r2 = string.format("%.1f", r2 * 22)
     stick_lx = string.format("%.1f", 45 + lx * 6)
     stick_ly = string.format("%.1f", 57 + ly * 6)
     stick_rx = string.format("%.1f", 75 + rx * 6)
     stick_ry = string.format("%.1f", 57 + ry * 6)
   else
+    trig_l2 = string.format("%.1f", l2 * 22)
+    trig_r2 = string.format("%.1f", r2 * 22)
     stick_lx = string.format("%.1f", 45.5 + lx * 3)
     stick_ly = string.format("%.1f", 64.46 + ly * 3)
     stick_rx = string.format("%.1f", 82.5 + rx * 3)
@@ -416,6 +429,8 @@ local function build_live_svg(model, sig)
     STICK_LX = stick_lx, STICK_LY = stick_ly,
     STICK_RX = stick_rx, STICK_RY = stick_ry,
     STICK_COLOR = lightbar,
+    TRIG_L2 = trig_l2, TRIG_R2 = trig_r2,
+    TRIG_COLOR = lightbar,
   }
   local svg = string.gsub(base, "{{([A-Z0-9_]+)}}", function(name)
     return btn[name] or ""
