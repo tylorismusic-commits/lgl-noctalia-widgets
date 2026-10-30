@@ -118,7 +118,7 @@ end
 local ART = {
   dualsense = { template = "assets/controller-template.svg", fallback = "assets/controller.svg" },
   edge = { template = "assets/controller-template.svg", fallback = "assets/controller.svg" },
-  ds4 = { template = "assets/ds4-template.svg", fallback = "assets/ds4.svg" },
+  ds4 = { template = "assets/controller-template.svg", fallback = "assets/controller.svg" },
   ["8bitdo"] = { template = "assets/xbox-template.svg", fallback = "assets/xbox.svg" },
   xinput = { template = "assets/xbox-template.svg", fallback = "assets/xbox.svg" },
 }
@@ -359,6 +359,11 @@ end
 
 local function build_live_svg(model, sig)
   local key = type(model) == "string" and model or "dualsense"
+  -- A DualShock 4 plugged in renders with the DualSense artwork + buttons
+  -- (the DS4 template is the ugly one); edge already shares the DualSense set.
+  if key == "ds4" or key == "edge" then
+    key = "dualsense"
+  end
   local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
   local base = live_base(key, line, body, lightbar, stroke_text, grip_text, opacity_text)
   if not base then
