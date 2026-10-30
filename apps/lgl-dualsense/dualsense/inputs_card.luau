@@ -195,8 +195,10 @@ local function controller_art(model)
     BTN_R3 = "none",
     STICK_COLOR = lightbar,
     TRIG_COLOR = lightbar,
-    TRIG_L2 = "0",
-    TRIG_R2 = "0",
+    TRIG_L2_H = "0",
+    TRIG_L2_Y = "0",
+    TRIG_R2_H = "0",
+    TRIG_R2_Y = "0",
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return values[name] or ("{{" .. name .. "}}")
@@ -395,25 +397,35 @@ local function build_live_svg(model, sig)
   -- Compute trigger bar widths and stick dot positions per family.
   local l2 = math.max(0, math.min(1, axis_val("triggers", "l2")))
   local r2 = math.max(0, math.min(1, axis_val("triggers", "r2")))
-  local trig_l2, trig_r2 = "0", "0"
+  local trig_l2_h, trig_l2_y = "0", "0"
+  local trig_r2_h, trig_r2_y = "0", "0"
   local stick_lx, stick_ly, stick_rx, stick_ry = "0", "0", "0", "0"
   if xbox then
-    trig_l2 = string.format("%.1f", l2 * 32)
-    trig_r2 = string.format("%.1f", r2 * 32)
+    local mh = 10
+    trig_l2_h = string.format("%.1f", l2 * mh)
+    trig_l2_y = string.format("%.1f", 2 + (mh - l2 * mh))
+    trig_r2_h = string.format("%.1f", r2 * mh)
+    trig_r2_y = string.format("%.1f", 2 + (mh - r2 * mh))
     stick_lx = string.format("%.1f", 35 + lx * 6)
     stick_ly = string.format("%.1f", 33 + ly * 6)
     stick_rx = string.format("%.1f", 85 + rx * 6)
     stick_ry = string.format("%.1f", 52 + ry * 6)
   elseif key == "ds4" then
-    trig_l2 = string.format("%.1f", l2 * 22)
-    trig_r2 = string.format("%.1f", r2 * 22)
+    local mh = 8
+    trig_l2_h = string.format("%.1f", l2 * mh)
+    trig_l2_y = string.format("%.1f", 6 + (mh - l2 * mh))
+    trig_r2_h = string.format("%.1f", r2 * mh)
+    trig_r2_y = string.format("%.1f", 6 + (mh - r2 * mh))
     stick_lx = string.format("%.1f", 45 + lx * 6)
     stick_ly = string.format("%.1f", 57 + ly * 6)
     stick_rx = string.format("%.1f", 75 + rx * 6)
     stick_ry = string.format("%.1f", 57 + ry * 6)
   else
-    trig_l2 = string.format("%.1f", l2 * 22)
-    trig_r2 = string.format("%.1f", r2 * 22)
+    local mh = 8
+    trig_l2_h = string.format("%.1f", l2 * mh)
+    trig_l2_y = string.format("%.1f", 12 + (mh - l2 * mh))
+    trig_r2_h = string.format("%.1f", r2 * mh)
+    trig_r2_y = string.format("%.1f", 12 + (mh - r2 * mh))
     stick_lx = string.format("%.1f", 45.5 + lx * 3)
     stick_ly = string.format("%.1f", 64.46 + ly * 3)
     stick_rx = string.format("%.1f", 82.5 + rx * 3)
@@ -429,7 +441,8 @@ local function build_live_svg(model, sig)
     STICK_LX = stick_lx, STICK_LY = stick_ly,
     STICK_RX = stick_rx, STICK_RY = stick_ry,
     STICK_COLOR = lightbar,
-    TRIG_L2 = trig_l2, TRIG_R2 = trig_r2,
+    TRIG_L2_H = trig_l2_h, TRIG_L2_Y = trig_l2_y,
+    TRIG_R2_H = trig_r2_h, TRIG_R2_Y = trig_r2_y,
     TRIG_COLOR = lightbar,
   }
   local svg = string.gsub(base, "{{([A-Z0-9_]+)}}", function(name)
@@ -805,12 +818,7 @@ local function header(s)
         fit = "contain",
       })
     end
-    local compact_children = {
-      ui.row({ key = "compact-triggers", gap = 8, align = "center", justify = "center" }, {
-        trigger_column("l2", "L2", axis("triggers", "l2"), false),
-        trigger_column("r2", "R2", axis("triggers", "r2"), true),
-      }),
-    }
+    local compact_children = {}
     if art_node then
       table.insert(compact_children, art_node)
     end
