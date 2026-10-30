@@ -441,13 +441,13 @@ local function build_live_svg(model, sig)
     local fill_h = l2 * mh
     local top = 6 + (mh - fill_h)
     local bottom = 6 + mh
-    local x0, x1, r = 29, 36, 3
+    local x0, x1, r = 23, 31, 3
     trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     -- Generate SVG path for R2 trigger
     fill_h = r2 * mh
     top = 6 + (mh - fill_h)
     bottom = 6 + mh
-    x0, x1, r = 84, 91, 3
+    x0, x1, r = 85, 93, 3
     trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45 + lx * 6)
     stick_ly = string.format("%.1f", 57 + ly * 6)
@@ -463,13 +463,13 @@ local function build_live_svg(model, sig)
     local fill_h = l2 * mh
     local top = 12 + (mh - fill_h)
     local bottom = 12 + mh
-    local x0, x1, r = 29, 36, 3
+    local x0, x1, r = 25, 33, 3
     trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     -- Generate SVG path for R2 trigger
     fill_h = r2 * mh
     top = 12 + (mh - fill_h)
     bottom = 12 + mh
-    x0, x1, r = 85, 92, 3
+    x0, x1, r = 95, 103, 3
     trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45.5 + lx * 3)
     stick_ly = string.format("%.1f", 64.46 + ly * 3)
