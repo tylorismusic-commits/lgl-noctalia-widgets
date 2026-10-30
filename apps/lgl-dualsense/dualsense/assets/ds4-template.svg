@@ -23,8 +23,6 @@
 <path d="M98 21.8 C94 18.4 88 15.8 81 14.9" fill="none" stroke="{{COLOR}}" stroke-width="4.4" stroke-linecap="round"/>
 <!-- light bar along the top edge of the touchpad -->
 <path d="M43.5 18.9 H72.5" stroke="{{LIGHTBAR}}" stroke-width="2.2" stroke-linecap="round"/>
-<rect x="20" y="12" width="{{TRIG_L2}}" height="3" rx="1.5" fill="{{TRIG_COLOR}}"/>
-<rect x="80" y="12" width="{{TRIG_R2}}" height="3" rx="1.5" fill="{{TRIG_COLOR}}"/>
 <!-- touchpad -->
 <rect x="41" y="19.5" width="34" height="17" rx="3" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.5"/>
 <!-- speaker -->

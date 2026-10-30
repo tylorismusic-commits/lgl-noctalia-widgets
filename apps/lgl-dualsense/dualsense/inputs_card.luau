@@ -191,10 +191,7 @@ local function controller_art(model)
     BTN_R1 = "none",
     BTN_L3 = "none",
     BTN_R3 = "none",
-    TRIG_COLOR = lightbar,
     STICK_COLOR = lightbar,
-    TRIG_L2 = "0",
-    TRIG_R2 = "0",
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return values[name] or ("{{" .. name .. "}}")
@@ -277,6 +274,10 @@ local art_live_base = {}
 
 local DIM_BTN = "#3a3f45"
 
+local function quantize(v, step)
+  return math.floor((v or 0) / step + 0.5) * step
+end
+
 local function live_base(model, line, body, lightbar, stroke_text, grip_text, opacity_text)
   local key = type(model) == "string" and model or "dualsense"
   local entry = ART[key] or ART.dualsense
@@ -311,7 +312,6 @@ local function live_base(model, line, body, lightbar, stroke_text, grip_text, op
     LIGHTBAR = lightbar,
     STROKE_BODY = stroke_text,
     STROKE_GRIP = grip_text,
-    TRIG_COLOR = lightbar,
     STICK_COLOR = lightbar,
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
@@ -376,33 +376,29 @@ local function build_live_svg(model, sig)
     if type(s) ~= "table" or type(s[t]) ~= "table" then return 0 end
     return tonumber(s[t][k]) or 0
   end
-  local l2 = math.max(0, math.min(1, axis_val("triggers", "l2")))
-  local r2 = math.max(0, math.min(1, axis_val("triggers", "r2")))
   local lx = axis_val("sticks", "lx")
   local ly = axis_val("sticks", "ly")
   local rx = axis_val("sticks", "rx")
   local ry = axis_val("sticks", "ry")
+  -- Quantize stick values so the dot position matches the cache key bucket.
+  lx = quantize(lx, 0.05)
+  ly = quantize(ly, 0.05)
+  rx = quantize(rx, 0.05)
+  ry = quantize(ry, 0.05)
 
   -- Compute trigger bar widths and stick dot positions per family.
-  local trig_l2, trig_r2 = "0", "0"
   local stick_lx, stick_ly, stick_rx, stick_ry = "0", "0", "0", "0"
   if xbox then
-    trig_l2 = string.format("%.1f", l2 * 28)
-    trig_r2 = string.format("%.1f", r2 * 28)
     stick_lx = string.format("%.1f", 35 + lx * 6)
     stick_ly = string.format("%.1f", 33 + ly * 6)
     stick_rx = string.format("%.1f", 85 + rx * 6)
     stick_ry = string.format("%.1f", 52 + ry * 6)
   elseif key == "ds4" then
-    trig_l2 = string.format("%.1f", l2 * 20)
-    trig_r2 = string.format("%.1f", r2 * 20)
     stick_lx = string.format("%.1f", 45 + lx * 6)
     stick_ly = string.format("%.1f", 57 + ly * 6)
     stick_rx = string.format("%.1f", 75 + rx * 6)
     stick_ry = string.format("%.1f", 57 + ry * 6)
   else
-    trig_l2 = string.format("%.1f", l2 * 20)
-    trig_r2 = string.format("%.1f", r2 * 20)
     stick_lx = string.format("%.1f", 45.5 + lx * 3)
     stick_ly = string.format("%.1f", 64.46 + ly * 3)
     stick_rx = string.format("%.1f", 82.5 + rx * 3)
@@ -411,14 +407,13 @@ local function build_live_svg(model, sig)
 
   -- One scan instead of many: a single gsub over the whole template.
   local btn = {
-    Y = c_tri, X = c_sqr, B = c_cir, A = c_crs,
-    TRIANGLE = c_tri, SQUARE = c_sqr, CIRCLE = c_cir, CROSS = c_crs,
-    UP = c_up, DOWN = c_down, LEFT = c_left, RIGHT = c_right,
-    L1 = c_l1, R1 = c_r1, L3 = c_l3, R3 = c_r3,
-    TRIG_L2 = trig_l2, TRIG_R2 = trig_r2,
+    ["BTN_Y"] = c_tri, ["BTN_X"] = c_sqr, ["BTN_B"] = c_cir, ["BTN_A"] = c_crs,
+    ["BTN_TRIANGLE"] = c_tri, ["BTN_SQUARE"] = c_sqr, ["BTN_CIRCLE"] = c_cir, ["BTN_CROSS"] = c_crs,
+    ["BTN_UP"] = c_up, ["BTN_DOWN"] = c_down, ["BTN_LEFT"] = c_left, ["BTN_RIGHT"] = c_right,
+    ["BTN_L1"] = c_l1, ["BTN_R1"] = c_r1, ["BTN_L3"] = c_l3, ["BTN_R3"] = c_r3,
     STICK_LX = stick_lx, STICK_LY = stick_ly,
     STICK_RX = stick_rx, STICK_RY = stick_ry,
-    TRIG_COLOR = lightbar, STICK_COLOR = lightbar,
+    STICK_COLOR = lightbar,
   }
   local svg = string.gsub(base, "{{([A-Z0-9_]+)}}", function(name)
     return btn[name] or ""
@@ -450,10 +445,6 @@ end
 
 local live_slot = 0
 
-local function quantize(v, step)
-  return math.floor((v or 0) / step + 0.5) * step
-end
-
 local function controller_art_live(model)
   local sig = current_sig()
   local key = type(model) == "string" and model or "dualsense"
@@ -462,16 +453,18 @@ local function controller_art_live(model)
     if type(s) ~= "table" or type(s[t]) ~= "table" then return 0 end
     return tonumber(s[t][k]) or 0
   end
-  local l2 = axis_val("triggers", "l2")
-  local r2 = axis_val("triggers", "r2")
   local lx = axis_val("sticks", "lx")
   local ly = axis_val("sticks", "ly")
   local rx = axis_val("sticks", "rx")
   local ry = axis_val("sticks", "ry")
+  -- Quantize stick values so the dot position matches the cache key bucket.
+  lx = quantize(lx, 0.05)
+  ly = quantize(ly, 0.05)
+  rx = quantize(rx, 0.05)
+  ry = quantize(ry, 0.05)
   -- Quantize to avoid regenerating on tiny changes.
-  local qkey = key .. "|" .. sig .. "|" .. quantize(l2, 0.05) .. "|" .. quantize(r2, 0.05)
-    .. "|" .. quantize(lx, 0.1) .. "|" .. quantize(ly, 0.1)
-    .. "|" .. quantize(rx, 0.1) .. "|" .. quantize(ry, 0.1)
+  local qkey = key .. "|" .. sig .. "|" .. quantize(lx, 0.05) .. "|" .. quantize(ly, 0.05)
+    .. "|" .. quantize(rx, 0.05) .. "|" .. quantize(ry, 0.05)
   if art_live_cache[qkey] and noctalia.fileExists(art_live_cache[qkey]) then
     return art_live_cache[qkey]
   end
@@ -481,6 +474,7 @@ local function controller_art_live(model)
   end
   live_slot = (live_slot + 1) % 4
   local path = dir .. "/controller-live-" .. color_key(key) .. "-" .. live_slot .. "-v3.svg"
+  local t0 = os.clock()
   local svg = build_live_svg(key, sig)
   if not svg or not noctalia.writeFile(path, svg) then
     return controller_art(model)
@@ -782,6 +776,13 @@ local function header(s)
   end
 
   local children = {}
+  -- Compact mode: trigger bars above the artwork, like the full input display.
+  if settings.icon_buttons then
+    table.insert(children, ui.row({ key = "compact-triggers", gap = 8, align = "center", justify = "center" }, {
+      trigger_column("l2", "L2", axis("triggers", "l2"), false),
+      trigger_column("r2", "R2", axis("triggers", "r2"), true),
+    }))
+  end
   local art = settings.icon_buttons and controller_art_live(s.model) or controller_art(s.model)
   if art then
     -- Icon mode is the whole point of the artwork, so give it more room.

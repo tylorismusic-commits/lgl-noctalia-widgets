@@ -6,8 +6,6 @@
 <rect x="71" y="13" width="28" height="11" rx="5.5" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.5" stroke-opacity="0.85"/>
 <rect x="21" y="13" width="28" height="11" rx="5.5" fill="{{BTN_L1}}" stroke="none"/>
 <rect x="71" y="13" width="28" height="11" rx="5.5" fill="{{BTN_R1}}" stroke="none"/>
-<rect x="21" y="25" width="{{TRIG_L2}}" height="3" rx="1.5" fill="{{TRIG_COLOR}}"/>
-<rect x="71" y="25" width="{{TRIG_R2}}" height="3" rx="1.5" fill="{{TRIG_COLOR}}"/>
 <path d="M34 19
          C28 19 23 22 20 28
          C16 36 12 52 11.5 64
