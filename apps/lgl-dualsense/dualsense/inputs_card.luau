@@ -191,10 +191,31 @@ local function controller_art(model)
     BTN_R1 = "none",
     BTN_L3 = "none",
     BTN_R3 = "none",
+    TRIG_COLOR = lightbar,
+    STICK_COLOR = lightbar,
+    TRIG_L2 = "0",
+    TRIG_R2 = "0",
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return values[name] or ("{{" .. name .. "}}")
   end)
+  -- Static art: center the stick dots (no live input).
+  if key == "8bitdo" or key == "xinput" then
+    svg = string.gsub(svg, "{{STICK_LX}}", "35")
+    svg = string.gsub(svg, "{{STICK_LY}}", "33")
+    svg = string.gsub(svg, "{{STICK_RX}}", "85")
+    svg = string.gsub(svg, "{{STICK_RY}}", "52")
+  elseif key == "ds4" then
+    svg = string.gsub(svg, "{{STICK_LX}}", "45")
+    svg = string.gsub(svg, "{{STICK_LY}}", "57")
+    svg = string.gsub(svg, "{{STICK_RX}}", "75")
+    svg = string.gsub(svg, "{{STICK_RY}}", "57")
+  else
+    svg = string.gsub(svg, "{{STICK_LX}}", "45.5")
+    svg = string.gsub(svg, "{{STICK_LY}}", "64.46")
+    svg = string.gsub(svg, "{{STICK_RX}}", "82.5")
+    svg = string.gsub(svg, "{{STICK_RY}}", "64.46")
+  end
   if not noctalia.writeFile(path, svg) then
     return entry.fallback
   end
@@ -290,6 +311,8 @@ local function live_base(model, line, body, lightbar, stroke_text, grip_text, op
     LIGHTBAR = lightbar,
     STROKE_BODY = stroke_text,
     STROKE_GRIP = grip_text,
+    TRIG_COLOR = lightbar,
+    STICK_COLOR = lightbar,
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return static[name] or ("{{" .. name .. "}}")
@@ -316,20 +339,6 @@ local function live_colors(model)
   return line, body, lightbar, stroke_text, grip_text, opacity_text
 end
 
-local function live_path(model, sig)
-  local dir = noctalia.pluginDataDir()
-  if not dir then
-    return nil
-  end
-  local key = type(model) == "string" and model or "dualsense"
-  local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
-  return dir .. "/controller-live-" .. color_key(key)
-    .. "-" .. color_key(line) .. "-" .. color_key(body)
-    .. "-" .. color_key(lightbar) .. "-" .. color_key(stroke_text)
-    .. "-" .. color_key(grip_text) .. "-" .. color_key(opacity_text)
-    .. "-" .. sig .. "-v2.svg"
-end
-
 -- sig = triangle, square, circle, cross ("1" pressed).
 local function build_live_svg(model, sig)
   local key = type(model) == "string" and model or "dualsense"
@@ -350,8 +359,7 @@ local function build_live_svg(model, sig)
   local c_cir = on(3) and (xbox and XBOX.b or SHAPE.circle) or face_unlit
   local c_crs = on(4) and (xbox and XBOX.a or SHAPE.cross) or face_unlit
 
-  -- Digital buttons (D-pad, shoulders, stick clicks) are overlays: invisible
-  -- when unlit so the base artwork is unchanged, bright when pressed.
+  -- Digital buttons (D-pad, shoulders, stick clicks) are overlays.
   local lit = lightbar
   local c_up = on(5) and lit or "none"
   local c_down = on(6) and lit or "none"
@@ -362,14 +370,57 @@ local function build_live_svg(model, sig)
   local c_l3 = on(11) and lit or "none"
   local c_r3 = on(12) and lit or "none"
 
+  -- Analog values from the current state.
+  local s = full_state()
+  local function axis_val(t, k)
+    if type(s) ~= "table" or type(s[t]) ~= "table" then return 0 end
+    return tonumber(s[t][k]) or 0
+  end
+  local l2 = math.max(0, math.min(1, axis_val("triggers", "l2")))
+  local r2 = math.max(0, math.min(1, axis_val("triggers", "r2")))
+  local lx = axis_val("sticks", "lx")
+  local ly = axis_val("sticks", "ly")
+  local rx = axis_val("sticks", "rx")
+  local ry = axis_val("sticks", "ry")
+
+  -- Compute trigger bar widths and stick dot positions per family.
+  local trig_l2, trig_r2 = "0", "0"
+  local stick_lx, stick_ly, stick_rx, stick_ry = "0", "0", "0", "0"
+  if xbox then
+    trig_l2 = string.format("%.1f", l2 * 28)
+    trig_r2 = string.format("%.1f", r2 * 28)
+    stick_lx = string.format("%.1f", 35 + lx * 6)
+    stick_ly = string.format("%.1f", 33 + ly * 6)
+    stick_rx = string.format("%.1f", 85 + rx * 6)
+    stick_ry = string.format("%.1f", 52 + ry * 6)
+  elseif key == "ds4" then
+    trig_l2 = string.format("%.1f", l2 * 20)
+    trig_r2 = string.format("%.1f", r2 * 20)
+    stick_lx = string.format("%.1f", 45 + lx * 6)
+    stick_ly = string.format("%.1f", 57 + ly * 6)
+    stick_rx = string.format("%.1f", 75 + rx * 6)
+    stick_ry = string.format("%.1f", 57 + ry * 6)
+  else
+    trig_l2 = string.format("%.1f", l2 * 20)
+    trig_r2 = string.format("%.1f", r2 * 20)
+    stick_lx = string.format("%.1f", 45.5 + lx * 3)
+    stick_ly = string.format("%.1f", 64.46 + ly * 3)
+    stick_rx = string.format("%.1f", 82.5 + rx * 3)
+    stick_ry = string.format("%.1f", 64.46 + ry * 3)
+  end
+
   -- One scan instead of many: a single gsub over the whole template.
   local btn = {
     Y = c_tri, X = c_sqr, B = c_cir, A = c_crs,
     TRIANGLE = c_tri, SQUARE = c_sqr, CIRCLE = c_cir, CROSS = c_crs,
     UP = c_up, DOWN = c_down, LEFT = c_left, RIGHT = c_right,
     L1 = c_l1, R1 = c_r1, L3 = c_l3, R3 = c_r3,
+    TRIG_L2 = trig_l2, TRIG_R2 = trig_r2,
+    STICK_LX = stick_lx, STICK_LY = stick_ly,
+    STICK_RX = stick_rx, STICK_RY = stick_ry,
+    TRIG_COLOR = lightbar, STICK_COLOR = lightbar,
   }
-  local svg = string.gsub(base, "{{BTN_([A-Z0-9_]+)}}", function(name)
+  local svg = string.gsub(base, "{{([A-Z0-9_]+)}}", function(name)
     return btn[name] or ""
   end)
   return svg
@@ -397,22 +448,44 @@ local function current_sig()
     .. (isbtn("r3") and "1" or "0")
 end
 
+local live_slot = 0
+
+local function quantize(v, step)
+  return math.floor((v or 0) / step + 0.5) * step
+end
+
 local function controller_art_live(model)
   local sig = current_sig()
   local key = type(model) == "string" and model or "dualsense"
-  local path = live_path(key, sig)
-  if not path then
+  local s = full_state()
+  local function axis_val(t, k)
+    if type(s) ~= "table" or type(s[t]) ~= "table" then return 0 end
+    return tonumber(s[t][k]) or 0
+  end
+  local l2 = axis_val("triggers", "l2")
+  local r2 = axis_val("triggers", "r2")
+  local lx = axis_val("sticks", "lx")
+  local ly = axis_val("sticks", "ly")
+  local rx = axis_val("sticks", "rx")
+  local ry = axis_val("sticks", "ry")
+  -- Quantize to avoid regenerating on tiny changes.
+  local qkey = key .. "|" .. sig .. "|" .. quantize(l2, 0.05) .. "|" .. quantize(r2, 0.05)
+    .. "|" .. quantize(lx, 0.1) .. "|" .. quantize(ly, 0.1)
+    .. "|" .. quantize(rx, 0.1) .. "|" .. quantize(ry, 0.1)
+  if art_live_cache[qkey] and noctalia.fileExists(art_live_cache[qkey]) then
+    return art_live_cache[qkey]
+  end
+  local dir = noctalia.pluginDataDir()
+  if not dir then
     return controller_art(model)
   end
-  local cache_key = key .. "|" .. sig
-  if art_live_cache[cache_key] == path and noctalia.fileExists(path) then
-    return path
-  end
+  live_slot = (live_slot + 1) % 4
+  local path = dir .. "/controller-live-" .. color_key(key) .. "-" .. live_slot .. "-v3.svg"
   local svg = build_live_svg(key, sig)
   if not svg or not noctalia.writeFile(path, svg) then
     return controller_art(model)
   end
-  art_live_cache[cache_key] = path
+  art_live_cache[qkey] = path
   return path
 end
 
@@ -422,14 +495,9 @@ end
 local function warm_live()
   local families = { "8bitdo", "dualsense", "ds4" }
   for _, key in ipairs(families) do
-    local svg = build_live_svg(key, "000000000000")
-    local path = live_path(key, "000000000000")
-    if svg and path then
-      if not noctalia.fileExists(path) then
-        noctalia.writeFile(path, svg)
-      end
-      art_live_cache[key .. "|000000000000"] = path
-    end
+    -- Warm the in-memory base template for each family (100 ms budget).
+    local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
+    live_base(key, line, body, lightbar, stroke_text, grip_text, opacity_text)
   end
 end
 
