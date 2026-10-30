@@ -174,13 +174,25 @@ local function controller_art(model)
     STROKE_BODY = stroke_text,
     STROKE_GRIP = grip_text,
     -- Static art keeps the normal face-button colours. The live (icon) variant
-    -- replaces these same tokens per state instead.
+    -- swaps these per state; digital-button overlays stay invisible ("none").
     BTN_Y = XBOX.y,
     BTN_X = XBOX.x,
     BTN_B = XBOX.b,
     BTN_A = XBOX.a,
+    BTN_TRIANGLE = SHAPE.triangle,
+    BTN_SQUARE = SHAPE.square,
+    BTN_CIRCLE = SHAPE.circle,
+    BTN_CROSS = SHAPE.cross,
+    BTN_UP = "none",
+    BTN_DOWN = "none",
+    BTN_LEFT = "none",
+    BTN_RIGHT = "none",
+    BTN_L1 = "none",
+    BTN_R1 = "none",
+    BTN_L3 = "none",
+    BTN_R3 = "none",
   }
-  local svg = string.gsub(template, "{{([A-Z_]+)}}", function(name)
+  local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return values[name] or ("{{" .. name .. "}}")
   end)
   if not noctalia.writeFile(path, svg) then
@@ -268,36 +280,8 @@ local function live_base(model, line, body, lightbar, stroke_text, grip_text, op
     return nil
   end
 
-  -- Add per-button placeholders to the templates that don't have them.
-  if key == "ds4" then
-    local ds4 = {
-      ["#6fe3a2"] = "{{BTN_TRIANGLE}}",
-      ["#ff7a90"] = "{{BTN_CIRCLE}}",
-      ["#8ab4ff"] = "{{BTN_CROSS}}",
-      ["#ff9ad5"] = "{{BTN_SQUARE}}",
-    }
-    template = string.gsub(template, 'stroke="(#[%x]+)"', function(color)
-      local token = ds4[color]
-      if token then
-        return 'stroke="' .. token .. '"'
-      end
-      return 'stroke="' .. color .. '"'
-    end)
-  elseif key == "dualsense" or key == "edge" then
-    local ds = {
-      ["99|39.9632"] = "TRIANGLE",
-      ["107|47.9632"] = "CIRCLE",
-      ["99|55.9632"] = "CROSS",
-      ["91|47.9632"] = "SQUARE",
-    }
-    template = string.gsub(template, '<circle cx="(%d+)" cy="([%d%.]+)" r="3%.2"/>', function(cx, cy)
-      local name = ds[cx .. "|" .. cy]
-      if not name then
-        return '<circle cx="' .. cx .. '" cy="' .. cy .. '" r="3.2"/>'
-      end
-      return '<circle cx="' .. cx .. '" cy="' .. cy .. '" r="3.2" fill="{{BTN_' .. name .. '}}"/>'
-    end)
-  end
+  -- Templates now carry their BTN_* tokens directly, so no
+  -- per-family placeholder injection is needed here.
 
   local static = {
     BODY = body,
@@ -307,7 +291,7 @@ local function live_base(model, line, body, lightbar, stroke_text, grip_text, op
     STROKE_BODY = stroke_text,
     STROKE_GRIP = grip_text,
   }
-  local svg = string.gsub(template, "{{([A-Z_]+)}}", function(name)
+  local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return static[name] or ("{{" .. name .. "}}")
   end)
   art_live_base[cache_key] = svg
@@ -358,18 +342,34 @@ local function build_live_svg(model, sig)
     return string.sub(sig, i, i) == "1"
   end
   local xbox = key == "8bitdo" or key == "xinput"
-  local c_tri = on(1) and (xbox and XBOX.y or SHAPE.triangle) or DIM_BTN
-  local c_sqr = on(2) and (xbox and XBOX.x or SHAPE.square) or DIM_BTN
-  local c_cir = on(3) and (xbox and XBOX.b or SHAPE.circle) or DIM_BTN
-  local c_crs = on(4) and (xbox and XBOX.a or SHAPE.cross) or DIM_BTN
+  local dualsense = key == "dualsense" or key == "edge"
+  -- Face buttons: solid circles on Xbox, strokes on DS4, fills on DualSense.
+  local face_unlit = dualsense and "none" or DIM_BTN
+  local c_tri = on(1) and (xbox and XBOX.y or SHAPE.triangle) or face_unlit
+  local c_sqr = on(2) and (xbox and XBOX.x or SHAPE.square) or face_unlit
+  local c_cir = on(3) and (xbox and XBOX.b or SHAPE.circle) or face_unlit
+  local c_crs = on(4) and (xbox and XBOX.a or SHAPE.cross) or face_unlit
 
-  -- One scan instead of eight: eight whole-file gsubs cost 12-24 ms in Luau,
-  -- which is most of the 25 ms per-callback budget.
+  -- Digital buttons (D-pad, shoulders, stick clicks) are overlays: invisible
+  -- when unlit so the base artwork is unchanged, bright when pressed.
+  local lit = lightbar
+  local c_up = on(5) and lit or "none"
+  local c_down = on(6) and lit or "none"
+  local c_left = on(7) and lit or "none"
+  local c_right = on(8) and lit or "none"
+  local c_l1 = on(9) and lit or "none"
+  local c_r1 = on(10) and lit or "none"
+  local c_l3 = on(11) and lit or "none"
+  local c_r3 = on(12) and lit or "none"
+
+  -- One scan instead of many: a single gsub over the whole template.
   local btn = {
     Y = c_tri, X = c_sqr, B = c_cir, A = c_crs,
     TRIANGLE = c_tri, SQUARE = c_sqr, CIRCLE = c_cir, CROSS = c_crs,
+    UP = c_up, DOWN = c_down, LEFT = c_left, RIGHT = c_right,
+    L1 = c_l1, R1 = c_r1, L3 = c_l3, R3 = c_r3,
   }
-  local svg = string.gsub(base, "{{BTN_(%u+)}}", function(name)
+  local svg = string.gsub(base, "{{BTN_([A-Z0-9_]+)}}", function(name)
     return btn[name] or ""
   end)
   return svg
@@ -380,10 +380,21 @@ local function current_sig()
   local function isbtn(name)
     return type(s) == "table" and type(s.buttons) == "table" and s.buttons[name] == true
   end
+  local d = (type(s) == "table" and type(s.dpad) == "table") and s.dpad or {}
+  local dx = tonumber(d.x) or 0
+  local dy = tonumber(d.y) or 0
   return (isbtn("triangle") and "1" or "0")
     .. (isbtn("square") and "1" or "0")
     .. (isbtn("circle") and "1" or "0")
     .. (isbtn("cross") and "1" or "0")
+    .. (dy < 0 and "1" or "0")   -- up
+    .. (dy > 0 and "1" or "0")   -- down
+    .. (dx < 0 and "1" or "0")   -- left
+    .. (dx > 0 and "1" or "0")   -- right
+    .. (isbtn("l1") and "1" or "0")
+    .. (isbtn("r1") and "1" or "0")
+    .. (isbtn("l3") and "1" or "0")
+    .. (isbtn("r3") and "1" or "0")
 end
 
 local function controller_art_live(model)
@@ -411,13 +422,13 @@ end
 local function warm_live()
   local families = { "8bitdo", "dualsense", "ds4" }
   for _, key in ipairs(families) do
-    local svg = build_live_svg(key, "0000")
-    local path = live_path(key, "0000")
+    local svg = build_live_svg(key, "000000000000")
+    local path = live_path(key, "000000000000")
     if svg and path then
       if not noctalia.fileExists(path) then
         noctalia.writeFile(path, svg)
       end
-      art_live_cache[key .. "|0000"] = path
+      art_live_cache[key .. "|000000000000"] = path
     end
   end
 end

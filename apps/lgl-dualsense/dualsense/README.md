@@ -61,8 +61,9 @@ pad in also takes it over. Until something is touched, Sony pads win over
   desktop-widget picker.
 - **Button-lit compact mode** — the optional `icon_buttons` setting lights the
   face buttons directly on the controller artwork and hides the separate input
-  rows. The four buttons are baked into the SVG, with one cached variant per
-  button combination, so a press only swaps a file path instead of
+  rows. The face buttons, D-pad directions, L1/R1 and L3/R3 also light up on
+  the artwork. The buttons are baked into the SVG as cached variants keyed on
+  the 12 digital inputs, so a press only swaps a file path instead of
   regenerating artwork inside Noctalia's per-render CPU budget.
 - **No hidraw contention** — the input reader only uses `/dev/input/event*`,
   so it runs alongside `ds4u`, Steam Input, and the plugin's own battery
