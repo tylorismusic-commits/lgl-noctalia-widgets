@@ -432,21 +432,21 @@ local function build_live_svg(model, sig)
     stick_rx = string.format("%.1f", 85 + rx * 6)
     stick_ry = string.format("%.1f", 52 + ry * 6)
   elseif key == "ds4" then
-    local mh = 8
+    local mh = 10
     trig_l2_h = string.format("%.1f", l2 * mh)
-    trig_l2_y = string.format("%.1f", 6 + (mh - l2 * mh))
+    trig_l2_y = string.format("%.1f", 4 + (mh - l2 * mh))
     trig_r2_h = string.format("%.1f", r2 * mh)
-    trig_r2_y = string.format("%.1f", 6 + (mh - r2 * mh))
+    trig_r2_y = string.format("%.1f", 4 + (mh - r2 * mh))
     -- Generate SVG path for L2 trigger
     local fill_h = l2 * mh
-    local top = 6 + (mh - fill_h)
-    local bottom = 6 + mh
+    local top = 4 + (mh - fill_h)
+    local bottom = 4 + mh
     local x0, x1, r = 23, 31, 3
     trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     -- Generate SVG path for R2 trigger
     fill_h = r2 * mh
-    top = 6 + (mh - fill_h)
-    bottom = 6 + mh
+    top = 4 + (mh - fill_h)
+    bottom = 4 + mh
     x0, x1, r = 85, 93, 3
     trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45 + lx * 6)
@@ -454,7 +454,7 @@ local function build_live_svg(model, sig)
     stick_rx = string.format("%.1f", 75 + rx * 6)
     stick_ry = string.format("%.1f", 57 + ry * 6)
   else
-    local mh = 8
+    local mh = 10
     trig_l2_h = string.format("%.1f", l2 * mh)
     trig_l2_y = string.format("%.1f", 12 + (mh - l2 * mh))
     trig_r2_h = string.format("%.1f", r2 * mh)
