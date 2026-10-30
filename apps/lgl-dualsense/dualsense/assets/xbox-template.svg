@@ -3,10 +3,10 @@
      inputs_card.luau replaces {{COLOR}}, {{BODY}}, {{BODY_OPACITY}} and
      {{STROKE_BODY}} and writes a generated copy into the plugin data directory. -->
 <!-- L2/R2 triggers (vertical, above bumpers) -->
-<rect x="31" y="2" width="8" height="10" rx="4" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
-<rect x="81" y="2" width="8" height="10" rx="4" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
-<rect x="31" y="{{TRIG_L2_Y}}" width="8" height="{{TRIG_L2_H}}" rx="4" fill="{{TRIG_COLOR}}"/>
-<rect x="81" y="{{TRIG_R2_Y}}" width="8" height="{{TRIG_R2_H}}" rx="4" fill="{{TRIG_COLOR}}"/>
+<path d="M35 2 Q31 2 31 6 L31 12 L39 12 L39 6 Q39 2 35 2 Z" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
+<path d="M85 2 Q81 2 81 6 L81 12 L89 12 L89 6 Q89 2 85 2 Z" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
+<path d="{{TRIG_L2_PATH}}" fill="{{TRIG_COLOR}}"/>
+<path d="{{TRIG_R2_PATH}}" fill="{{TRIG_COLOR}}"/>
 <rect x="21" y="13" width="28" height="11" rx="5.5" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.5" stroke-opacity="0.85"/>
 <rect x="71" y="13" width="28" height="11" rx="5.5" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.5" stroke-opacity="0.85"/>
 <rect x="21" y="13" width="28" height="11" rx="5.5" fill="{{BTN_L1}}" stroke="none"/>

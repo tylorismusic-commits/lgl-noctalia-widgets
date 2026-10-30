@@ -195,10 +195,8 @@ local function controller_art(model)
     BTN_R3 = "none",
     STICK_COLOR = lightbar,
     TRIG_COLOR = lightbar,
-    TRIG_L2_H = "0",
-    TRIG_L2_Y = "0",
-    TRIG_R2_H = "0",
-    TRIG_R2_Y = "0",
+    TRIG_L2_PATH = "",
+    TRIG_R2_PATH = "",
   }
   local svg = string.gsub(template, "{{([A-Z0-9_]+)}}", function(name)
     return values[name] or ("{{" .. name .. "}}")
@@ -441,8 +439,8 @@ local function build_live_svg(model, sig)
     STICK_LX = stick_lx, STICK_LY = stick_ly,
     STICK_RX = stick_rx, STICK_RY = stick_ry,
     STICK_COLOR = lightbar,
-    TRIG_L2_H = trig_l2_h, TRIG_L2_Y = trig_l2_y,
-    TRIG_R2_H = trig_r2_h, TRIG_R2_Y = trig_r2_y,
+    TRIG_L2_PATH = trig_l2_path,
+    TRIG_R2_PATH = trig_r2_path,
     TRIG_COLOR = lightbar,
   }
   local svg = string.gsub(base, "{{([A-Z0-9_]+)}}", function(name)

@@ -22,10 +22,10 @@
 <path d="M22 21.8 C26 18.4 32 15.8 39 14.9" fill="none" stroke="{{COLOR}}" stroke-width="4.4" stroke-linecap="round"/>
 <path d="M98 21.8 C94 18.4 88 15.8 81 14.9" fill="none" stroke="{{COLOR}}" stroke-width="4.4" stroke-linecap="round"/>
 <!-- L2/R2 triggers (vertical, above bumpers) -->
-<rect x="29" y="6" width="7" height="8" rx="3.5" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
-<rect x="84" y="6" width="7" height="8" rx="3.5" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
-<rect x="29" y="{{TRIG_L2_Y}}" width="7" height="{{TRIG_L2_H}}" rx="3.5" fill="{{TRIG_COLOR}}"/>
-<rect x="84" y="{{TRIG_R2_Y}}" width="7" height="{{TRIG_R2_H}}" rx="3.5" fill="{{TRIG_COLOR}}"/>
+<path d="M32.5 6 Q29 6 29 9 L29 14 L36 14 L36 9 Q36 6 32.5 6 Z" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
+<path d="M87.5 6 Q84 6 84 9 L84 14 L91 14 L91 9 Q91 6 87.5 6 Z" fill="{{BODY}}" fill-opacity="{{BODY_OPACITY}}" stroke="{{COLOR}}" stroke-width="1.2" stroke-opacity="0.7"/>
+<path d="{{TRIG_L2_PATH}}" fill="{{TRIG_COLOR}}"/>
+<path d="{{TRIG_R2_PATH}}" fill="{{TRIG_COLOR}}"/>
 <!-- light bar along the top edge of the touchpad -->
 <path d="M43.5 18.9 H72.5" stroke="{{LIGHTBAR}}" stroke-width="2.2" stroke-linecap="round"/>
 <!-- touchpad -->
