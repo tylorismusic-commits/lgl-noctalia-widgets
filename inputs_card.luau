@@ -543,7 +543,7 @@ local function controller_art_live(model)
   local ry = quantize(axis_val("sticks", "ry"), 0.05)
   local l2q = quantize(axis_val("triggers", "l2"), 0.05)
   local r2q = quantize(axis_val("triggers", "r2"), 0.05)
-  local qkey = key .. "|" .. sig .. "|" .. l2q .. "|" .. r2q .. "|" .. lx .. "|" .. ly .. "|" .. rx .. "|" .. ry
+  local qkey = key .. "|" .. sig .. "|" .. l2q .. "|" .. r2q .. "|" .. lx .. "|" .. ly .. "|" .. rx .. "|" .. ry .. "|" .. live_slot
   -- If nothing changed, reuse the last path (no regeneration).
   if qkey == last_live_qkey and last_live_path and noctalia.fileExists(last_live_path) then
     return last_live_path
