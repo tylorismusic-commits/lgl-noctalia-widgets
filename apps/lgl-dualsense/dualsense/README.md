@@ -16,6 +16,12 @@ upstream Noctalia v5 plugin API.
 | Plugin API | 17 |
 | Licence | MIT |
 
+## Display modes
+
+| Battery only | Compact | Full |
+| --- | --- | --- |
+| ![Battery only](docs/screenshots/battery.png) | ![Compact](docs/screenshots/compact.png) | ![Full](docs/screenshots/full.png) |
+
 ## Supported controllers
 
 | Model | USB / Bluetooth IDs | Artwork and buttons | Notes |
