@@ -59,12 +59,16 @@ pad in also takes it over. Until something is touched, Sony pads win over
 - **Centered header** — controller art, model name and battery sit centered
   above the input rows; the widget is labelled **Gamepad Display** in the
   desktop-widget picker.
-- **Button-lit compact mode** — the optional `icon_buttons` setting lights the
-  face buttons directly on the controller artwork and hides the separate input
-  rows. The face buttons, D-pad directions, L1/R1 and L3/R3 also light up on
-  the artwork. The buttons are baked into the SVG as cached variants keyed on
-  the 12 digital inputs, so a press only swaps a file path instead of
-  regenerating artwork inside Noctalia's per-render CPU budget.
+- **Three display modes** (the `display_mode` setting):
+  - `battery` — header and controller artwork only (minimal footprint).
+  - `compact` — artwork with lit face buttons, D-pad, L1/R1 and L3/R3, plus
+    trigger bars above it (no separate input grid).
+  - `full` — the complete input display: triggers, buttons, sticks and D-pad.
+- **Button lighting in compact mode** — the face buttons, D-pad directions,
+  L1/R1 and L3/R3 light up on the controller artwork. They are baked into the
+  SVG as cached variants keyed on the 12 digital inputs, so a press only swaps
+  a file path instead of regenerating artwork inside Noctalia's per-render CPU
+  budget.
 - **No hidraw contention** — the input reader only uses `/dev/input/event*`,
   so it runs alongside `ds4u`, Steam Input, and the plugin's own battery
   service without competing for HID reports.
