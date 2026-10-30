@@ -346,6 +346,17 @@ local function live_colors(model)
 end
 
 -- sig = triangle, square, circle, cross ("1" pressed).
+-- Trigger bar path: flat-bottomed bar with rounded top corners.
+-- Outline: bottom-left -> across bottom -> up right side -> rounded top ->
+-- across top -> rounded top -> down left side -> close.
+local function trig_bar(x0, x1, top, bottom, r, rounded)
+  if not rounded or (bottom - top) < 2 * r then
+    return string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x0, bottom, x1, bottom, x1, top, x0, top)
+  end
+  return string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f Z",
+    x0, bottom, x1, bottom, x1, top + r, x1, top, x1 - r, top, x0 + r, top, x0, top, x0, top + r, x0, bottom)
+end
+
 local function build_live_svg(model, sig)
   local key = type(model) == "string" and model or "dualsense"
   local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
@@ -409,21 +420,13 @@ local function build_live_svg(model, sig)
     local top = 2 + (mh - fill_h)
     local bottom = 2 + mh
     local x0, x1, r = 31, 39, 4
-    if fill_h >= 4 then
-      trig_l2_path = string.format("M%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f Z", x0+r, top, x1, top, x1, top+r, x1, bottom, x0, bottom, x0, top+r, x0, top, x0+r, top)
-    else
-      trig_l2_path = string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x0+r, top, x1, top, x1, bottom, x0, bottom, x0, top)
-    end
+    trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     -- Generate SVG path for R2 trigger
     fill_h = r2 * mh
     top = 2 + (mh - fill_h)
     bottom = 2 + mh
     x0, x1, r = 81, 89, 4
-    if fill_h >= 4 then
-      trig_r2_path = string.format("M%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f Z", x0+r, top, x1, top, x1, top+r, x1, bottom, x0, bottom, x0, top+r, x0, top, x0+r, top)
-    else
-      trig_r2_path = string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x0+r, top, x1, top, x1, bottom, x0, bottom, x0, top)
-    end
+    trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 35 + lx * 6)
     stick_ly = string.format("%.1f", 33 + ly * 6)
     stick_rx = string.format("%.1f", 85 + rx * 6)
@@ -439,21 +442,13 @@ local function build_live_svg(model, sig)
     local top = 6 + (mh - fill_h)
     local bottom = 6 + mh
     local x0, x1, r = 29, 36, 3
-    if fill_h >= 4 then
-      trig_l2_path = string.format("M%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f Z", x1-r, top, x1, top, x1, top+r, x1, bottom, x0, bottom, x0, top+r, x0, top, x1-r, top)
-    else
-      trig_l2_path = string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x1-r, top, x1, top, x1, bottom, x0, bottom, x0, top)
-    end
+    trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     -- Generate SVG path for R2 trigger
     fill_h = r2 * mh
     top = 6 + (mh - fill_h)
     bottom = 6 + mh
     x0, x1, r = 84, 91, 3
-    if fill_h >= 4 then
-      trig_r2_path = string.format("M%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f Z", x1-r, top, x1, top, x1, top+r, x1, bottom, x0, bottom, x0, top+r, x0, top, x1-r, top)
-    else
-      trig_r2_path = string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x1-r, top, x1, top, x1, bottom, x0, bottom, x0, top)
-    end
+    trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45 + lx * 6)
     stick_ly = string.format("%.1f", 57 + ly * 6)
     stick_rx = string.format("%.1f", 75 + rx * 6)
@@ -469,21 +464,13 @@ local function build_live_svg(model, sig)
     local top = 12 + (mh - fill_h)
     local bottom = 12 + mh
     local x0, x1, r = 29, 36, 3
-    if fill_h >= 4 then
-      trig_l2_path = string.format("M%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f Z", x1-r, top, x1, top, x1, top+r, x1, bottom, x0, bottom, x0, top+r, x0, top, x1-r, top)
-    else
-      trig_l2_path = string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x1-r, top, x1, top, x1, bottom, x0, bottom, x0, top)
-    end
+    trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     -- Generate SVG path for R2 trigger
     fill_h = r2 * mh
     top = 12 + (mh - fill_h)
     bottom = 12 + mh
     x0, x1, r = 85, 92, 3
-    if fill_h >= 4 then
-      trig_r2_path = string.format("M%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f Z", x1-r, top, x1, top, x1, top+r, x1, bottom, x0, bottom, x0, top+r, x0, top, x1-r, top)
-    else
-      trig_r2_path = string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x1-r, top, x1, top, x1, bottom, x0, bottom, x0, top)
-    end
+    trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45.5 + lx * 3)
     stick_ly = string.format("%.1f", 64.46 + ly * 3)
     stick_rx = string.format("%.1f", 82.5 + rx * 3)
