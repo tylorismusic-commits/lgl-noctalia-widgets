@@ -124,10 +124,3 @@ entry = "inputs_card.luau"
   label_key       = "settings.show_inputs.label"
   description_key = "settings.show_inputs.description"
   default         = true
-
-  [[desktop_widget.setting]]
-  key             = "icon_buttons"
-  type            = "bool"
-  label_key       = "settings.icon_buttons.label"
-  description_key = "settings.icon_buttons.description"
-  default         = false

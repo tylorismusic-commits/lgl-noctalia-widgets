@@ -109,10 +109,6 @@
     "show_inputs": {
       "label": "Show input display",
       "description": "Show the live triggers, buttons, sticks and D-pad below the header."
-    },
-    "icon_buttons": {
-      "label": "Light buttons on controller",
-      "description": "Light up the face buttons on the controller image and hide the separate input section."
     }
   },
   "status": {

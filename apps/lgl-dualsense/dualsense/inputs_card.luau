@@ -15,7 +15,6 @@ local settings = {
   show_battery = noctalia.getConfig("show_battery"),
   vertical_layout = noctalia.getConfig("vertical_layout"),
   show_inputs = noctalia.getConfig("show_inputs"),
-  icon_buttons = noctalia.getConfig("icon_buttons"),
   illustration_color = noctalia.getConfig("illustration_color") or "#e8ebef",
   controller_body_color = noctalia.getConfig("controller_body_color") or "#2c3035",
   controller_body_opacity = tonumber(noctalia.getConfig("controller_body_opacity")) or 1.0,
@@ -38,9 +37,6 @@ if settings.vertical_layout == nil then
 end
 if settings.show_inputs == nil then
   settings.show_inputs = true
-end
-if settings.icon_buttons == nil then
-  settings.icon_buttons = false
 end
 
 local SHAPE = {
@@ -502,7 +498,7 @@ local function header(s)
   end
 
   local children = {}
-  local art = settings.icon_buttons and controller_art_live(s.model) or controller_art(s.model)
+  local art = controller_art(s.model)
   if art then
     table.insert(children, ui.image({
       key = "controller-art",
@@ -625,89 +621,6 @@ local function placeholder()
   })
 end
 
-local art_live_cache = {}
-
-local function controller_art_live(model)
-  local key = type(model) == "string" and model or "dualsense"
-  if key ~= "8bitdo" and key ~= "xinput" and key ~= "ds4" and key ~= "dualsense" and key ~= "edge" then
-    return controller_art(model)
-  end
-  local entry = ART[key] or ART.dualsense
-  local line = resolve_color(settings.illustration_color, "#e8ebef")
-  local body = resolve_color(settings.controller_body_color, "#2c3035")
-  local lightbar = resolve_color(settings.accent_color, "#4a90e2")
-  if not valid_hex(line) then line = "#e8ebef" end
-  if not valid_hex(body) then body = "#2c3035" end
-  if not valid_hex(lightbar) then lightbar = "#4a90e2" end
-  local stroke = settings.controller_stroke_width
-  if type(stroke) ~= "number" or stroke <= 0 then stroke = 2.8 end
-  local opacity = settings.controller_body_opacity
-  if type(opacity) ~= "number" then opacity = 1.0 end
-  opacity = math.max(0, math.min(1, opacity))
-  local stroke_text = string.format("%.2f", stroke)
-  local grip_text = string.format("%.2f", stroke * 0.625)
-  local opacity_text = string.format("%.2f", opacity)
-
-  local dim = "#3a3f45"
-  local btn_y = button("triangle") and "#f2c94c" or dim
-  local btn_x = button("square") and "#4a90e2" or dim
-  local btn_b = button("circle") and "#ef5350" or dim
-  local btn_a = button("cross") and "#5fbf6a" or dim
-  local btn_tri = button("triangle") and "#6fe3a2" or dim
-  local btn_cir = button("circle") and "#ff7a90" or dim
-  local btn_sqr = button("square") and "#ff9ad5" or dim
-  local btn_crs = button("cross") and "#8ab4ff" or dim
-
-  local sig = (button("triangle") and "1" or "0")
-    .. (button("square") and "1" or "0")
-    .. (button("circle") and "1" or "0")
-    .. (button("cross") and "1" or "0")
-
-  local dir = noctalia.pluginDataDir()
-  if not dir then return nil end
-  local path = dir .. "/controller-live-" .. color_key(key)
-    .. "-" .. color_key(line) .. "-" .. color_key(body)
-    .. "-" .. color_key(lightbar) .. "-" .. color_key(stroke_text)
-    .. "-" .. color_key(opacity_text) .. "-" .. sig .. ".svg"
-
-  if art_live_cache[key .. sig] == path and noctalia.fileExists(path) then
-    return path
-  end
-  local template = noctalia.readFile(entry.template)
-  if not template then return entry.fallback end
-  -- Add per-button placeholders for templates that don't have them.
-  if key == "ds4" then
-    template = string.gsub(template, 'stroke="#6fe3a2"', 'stroke="{{BTN_TRIANGLE}}"')
-    template = string.gsub(template, 'stroke="#ff7a90"', 'stroke="{{BTN_CIRCLE}}"')
-    template = string.gsub(template, 'stroke="#8ab4ff"', 'stroke="{{BTN_CROSS}}"')
-    template = string.gsub(template, 'stroke="#ff9ad5"', 'stroke="{{BTN_SQUARE}}"')
-  elseif key == "dualsense" or key == "edge" then
-    template = string.gsub(template, '<circle cx="99" cy="39.9632" r="3.2"/>', '<circle cx="99" cy="39.9632" r="3.2" fill="{{BTN_TRIANGLE}}"/>')
-    template = string.gsub(template, '<circle cx="107" cy="47.9632" r="3.2"/>', '<circle cx="107" cy="47.9632" r="3.2" fill="{{BTN_CIRCLE}}"/>')
-    template = string.gsub(template, '<circle cx="99" cy="55.9632" r="3.2"/>', '<circle cx="99" cy="55.9632" r="3.2" fill="{{BTN_CROSS}}"/>')
-    template = string.gsub(template, '<circle cx="91" cy="47.9632" r="3.2"/>', '<circle cx="91" cy="47.9632" r="3.2" fill="{{BTN_SQUARE}}"/>')
-  end
-  local svg = string.gsub(template, "{{BODY}}", body)
-  svg = string.gsub(svg, "{{BODY_OPACITY}}", opacity_text)
-  svg = string.gsub(svg, "{{COLOR}}", line)
-  svg = string.gsub(svg, "{{LIGHTBAR}}", lightbar)
-  svg = string.gsub(svg, "{{STROKE_BODY}}", stroke_text)
-  svg = string.gsub(svg, "{{STROKE_GRIP}}", grip_text)
-  svg = string.gsub(svg, "{{BTN_Y}}", btn_y)
-  svg = string.gsub(svg, "{{BTN_X}}", btn_x)
-  svg = string.gsub(svg, "{{BTN_B}}", btn_b)
-  svg = string.gsub(svg, "{{BTN_A}}", btn_a)
-  svg = string.gsub(svg, "{{BTN_TRIANGLE}}", btn_tri)
-  svg = string.gsub(svg, "{{BTN_CIRCLE}}", btn_cir)
-  svg = string.gsub(svg, "{{BTN_SQUARE}}", btn_sqr)
-  svg = string.gsub(svg, "{{BTN_CROSS}}", btn_crs)
-  if not noctalia.writeFile(path, svg) then
-    return entry.fallback
-  end
-  art_live_cache[key .. sig] = path
-  return path
-end
-
 render = function()
   local s = full_state()
 
@@ -716,10 +629,8 @@ render = function()
     children = { header(s) }
     if settings.show_inputs ~= false then
       local shoulders_node = settings.vertical_layout and shoulders_vertical(s) or shoulders(s)
-      table.insert(children, shoulders_node)
-    end
-    if settings.show_inputs ~= false and not settings.icon_buttons then
       local body_node = settings.vertical_layout and body_vertical() or body()
+      table.insert(children, shoulders_node)
       table.insert(children, body_node)
     end
   else
