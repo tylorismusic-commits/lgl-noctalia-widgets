@@ -46,7 +46,7 @@
 <!-- A B X Y -->
 <g font-family="sans-serif" font-size="6" font-weight="bold" text-anchor="middle">
   <circle cx="85" cy="23.5" r="5" fill="{{BTN_Y}}"/>
-  <text x="85" y="25.8" fill="#2b2b2b">Y</text>
+  <text x="85" y="25.8" fill="#ffffff">Y</text>
   <circle cx="78" cy="30.5" r="5" fill="{{BTN_X}}"/>
   <text x="78" y="32.8" fill="#ffffff">X</text>
   <circle cx="92" cy="30.5" r="5" fill="{{BTN_B}}"/>
