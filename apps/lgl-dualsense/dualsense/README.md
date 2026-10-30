@@ -59,6 +59,11 @@ pad in also takes it over. Until something is touched, Sony pads win over
 - **Centered header** — controller art, model name and battery sit centered
   above the input rows; the widget is labelled **Gamepad Display** in the
   desktop-widget picker.
+- **Button-lit compact mode** — the optional `icon_buttons` setting lights the
+  face buttons directly on the controller artwork and hides the separate input
+  rows. The four buttons are baked into the SVG, with one cached variant per
+  button combination, so a press only swaps a file path instead of
+  regenerating artwork inside Noctalia's per-render CPU budget.
 - **No hidraw contention** — the input reader only uses `/dev/input/event*`,
   so it runs alongside `ds4u`, Steam Input, and the plugin's own battery
   service without competing for HID reports.
@@ -191,7 +196,11 @@ Desktop widget:
 | `illustration_color` | `#e8ebef` | Controller line-art colour |
 | `controller_body_color` | `#2c3035` | Controller body fill |
 | `controller_body_opacity` | `1.0` | Body fill opacity (`0` = line art only) |
-| `controller_stroke_width` | `2.8` | Outline and button-edge thickness (`0.5`–`8`) |\n| `vertical_layout` | `false` | Stack the triggers above L1/R1 and the sticks below the face buttons instead of the wide side-by-side layout |\n| `show_inputs` | `true` | Show the live triggers, buttons, sticks and D-pad below the header |\n
+| `controller_stroke_width` | `2.8` | Outline and button-edge thickness (`0.5`–`8`) |
+| `vertical_layout` | `false` | Stack the triggers above L1/R1 and the sticks below the face buttons instead of the wide side-by-side layout |
+| `show_inputs` | `true` | Show the live triggers, buttons, sticks and D-pad below the header |
+| `icon_buttons` | `false` | Light the face buttons on the controller artwork and hide the separate input display (compact view) |
+
 Colour settings accept a `#rrggbb` value or a Noctalia palette role such as
 `primary`, `on_surface` or `on_surface_variant`. Palette roles follow the live
 theme; the generated artwork is rewritten when a colour changes.

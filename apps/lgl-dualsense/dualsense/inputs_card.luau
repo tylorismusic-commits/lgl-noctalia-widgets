@@ -15,6 +15,7 @@ local settings = {
   show_battery = noctalia.getConfig("show_battery"),
   vertical_layout = noctalia.getConfig("vertical_layout"),
   show_inputs = noctalia.getConfig("show_inputs"),
+  icon_buttons = noctalia.getConfig("icon_buttons"),
   illustration_color = noctalia.getConfig("illustration_color") or "#e8ebef",
   controller_body_color = noctalia.getConfig("controller_body_color") or "#2c3035",
   controller_body_opacity = tonumber(noctalia.getConfig("controller_body_opacity")) or 1.0,
@@ -37,6 +38,9 @@ if settings.vertical_layout == nil then
 end
 if settings.show_inputs == nil then
   settings.show_inputs = true
+end
+if settings.icon_buttons == nil then
+  settings.icon_buttons = false
 end
 
 local SHAPE = {
@@ -162,12 +166,23 @@ local function controller_art(model)
   if not template then
     return entry.fallback
   end
-  local svg = string.gsub(template, "{{BODY}}", body)
-  svg = string.gsub(svg, "{{BODY_OPACITY}}", opacity_text)
-  svg = string.gsub(svg, "{{COLOR}}", line)
-  svg = string.gsub(svg, "{{LIGHTBAR}}", lightbar)
-  svg = string.gsub(svg, "{{STROKE_BODY}}", stroke_text)
-  svg = string.gsub(svg, "{{STROKE_GRIP}}", grip_text)
+  local values = {
+    BODY = body,
+    BODY_OPACITY = opacity_text,
+    COLOR = line,
+    LIGHTBAR = lightbar,
+    STROKE_BODY = stroke_text,
+    STROKE_GRIP = grip_text,
+    -- Static art keeps the normal face-button colours. The live (icon) variant
+    -- replaces these same tokens per state instead.
+    BTN_Y = XBOX.y,
+    BTN_X = XBOX.x,
+    BTN_B = XBOX.b,
+    BTN_A = XBOX.a,
+  }
+  local svg = string.gsub(template, "{{([A-Z_]+)}}", function(name)
+    return values[name] or ("{{" .. name .. "}}")
+  end)
   if not noctalia.writeFile(path, svg) then
     return entry.fallback
   end
@@ -215,6 +230,196 @@ local function dpad(key)
     return 0
   end
   return tonumber(s.dpad[key]) or 0
+end
+
+-- Live controller artwork (compact "icon" mode).
+--
+-- Regenerating a full SVG on every button press is what made earlier attempts
+-- hit Noctalia's 25 ms per-callback CPU budget. The static parts are built once
+-- per model/colour set and only the four face-button tokens are swapped per
+-- state. Each replacement is a single scan: eight whole-file gsubs cost
+-- 12-24 ms in Luau, which is most of the budget.
+local art_live_cache = {}
+local art_live_base = {}
+
+local DIM_BTN = "#3a3f45"
+
+local function live_base(model, line, body, lightbar, stroke_text, grip_text, opacity_text)
+  local key = type(model) == "string" and model or "dualsense"
+  local entry = ART[key] or ART.dualsense
+  -- xinput shares the Xbox template and edge shares the DualSense template, so
+  -- cache the prepared base per template family instead of per model name.
+  local family = key
+  if key == "xinput" then
+    family = "8bitdo"
+  elseif key == "edge" then
+    family = "dualsense"
+  end
+  local cache_key = family .. "|" .. color_key(line) .. "|" .. color_key(body)
+    .. "|" .. color_key(lightbar) .. "|" .. color_key(stroke_text)
+    .. "|" .. color_key(grip_text) .. "|" .. color_key(opacity_text)
+  local base = art_live_base[cache_key]
+  if base then
+    return base
+  end
+
+  local template = noctalia.readFile(entry.template)
+  if not template then
+    return nil
+  end
+
+  -- Add per-button placeholders to the templates that don't have them.
+  if key == "ds4" then
+    local ds4 = {
+      ["#6fe3a2"] = "{{BTN_TRIANGLE}}",
+      ["#ff7a90"] = "{{BTN_CIRCLE}}",
+      ["#8ab4ff"] = "{{BTN_CROSS}}",
+      ["#ff9ad5"] = "{{BTN_SQUARE}}",
+    }
+    template = string.gsub(template, 'stroke="(#[%x]+)"', function(color)
+      local token = ds4[color]
+      if token then
+        return 'stroke="' .. token .. '"'
+      end
+      return 'stroke="' .. color .. '"'
+    end)
+  elseif key == "dualsense" or key == "edge" then
+    local ds = {
+      ["99|39.9632"] = "TRIANGLE",
+      ["107|47.9632"] = "CIRCLE",
+      ["99|55.9632"] = "CROSS",
+      ["91|47.9632"] = "SQUARE",
+    }
+    template = string.gsub(template, '<circle cx="(%d+)" cy="([%d%.]+)" r="3%.2"/>', function(cx, cy)
+      local name = ds[cx .. "|" .. cy]
+      if not name then
+        return '<circle cx="' .. cx .. '" cy="' .. cy .. '" r="3.2"/>'
+      end
+      return '<circle cx="' .. cx .. '" cy="' .. cy .. '" r="3.2" fill="{{BTN_' .. name .. '}}"/>'
+    end)
+  end
+
+  local static = {
+    BODY = body,
+    BODY_OPACITY = opacity_text,
+    COLOR = line,
+    LIGHTBAR = lightbar,
+    STROKE_BODY = stroke_text,
+    STROKE_GRIP = grip_text,
+  }
+  local svg = string.gsub(template, "{{([A-Z_]+)}}", function(name)
+    return static[name] or ("{{" .. name .. "}}")
+  end)
+  art_live_base[cache_key] = svg
+  return svg
+end
+
+local function live_colors(model)
+  local line = resolve_color(settings.illustration_color, "#e8ebef")
+  local body = resolve_color(settings.controller_body_color, "#2c3035")
+  local lightbar = resolve_color(settings.accent_color, "#4a90e2")
+  if not valid_hex(line) then line = "#e8ebef" end
+  if not valid_hex(body) then body = "#2c3035" end
+  if not valid_hex(lightbar) then lightbar = "#4a90e2" end
+  local stroke = settings.controller_stroke_width
+  if type(stroke) ~= "number" or stroke <= 0 then stroke = 2.8 end
+  local opacity = settings.controller_body_opacity
+  if type(opacity) ~= "number" then opacity = 1.0 end
+  opacity = math.max(0, math.min(1, opacity))
+  local stroke_text = string.format("%.2f", stroke)
+  local grip_text = string.format("%.2f", stroke * 0.625)
+  local opacity_text = string.format("%.2f", opacity)
+  return line, body, lightbar, stroke_text, grip_text, opacity_text
+end
+
+local function live_path(model, sig)
+  local dir = noctalia.pluginDataDir()
+  if not dir then
+    return nil
+  end
+  local key = type(model) == "string" and model or "dualsense"
+  local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
+  return dir .. "/controller-live-" .. color_key(key)
+    .. "-" .. color_key(line) .. "-" .. color_key(body)
+    .. "-" .. color_key(lightbar) .. "-" .. color_key(stroke_text)
+    .. "-" .. color_key(grip_text) .. "-" .. color_key(opacity_text)
+    .. "-" .. sig .. ".svg"
+end
+
+-- sig = triangle, square, circle, cross ("1" pressed).
+local function build_live_svg(model, sig)
+  local key = type(model) == "string" and model or "dualsense"
+  local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
+  local base = live_base(key, line, body, lightbar, stroke_text, grip_text, opacity_text)
+  if not base then
+    return nil
+  end
+  local function on(i)
+    return string.sub(sig, i, i) == "1"
+  end
+  local xbox = key == "8bitdo" or key == "xinput"
+  local c_tri = on(1) and (xbox and XBOX.y or SHAPE.triangle) or DIM_BTN
+  local c_sqr = on(2) and (xbox and XBOX.x or SHAPE.square) or DIM_BTN
+  local c_cir = on(3) and (xbox and XBOX.b or SHAPE.circle) or DIM_BTN
+  local c_crs = on(4) and (xbox and XBOX.a or SHAPE.cross) or DIM_BTN
+
+  -- One scan instead of eight: eight whole-file gsubs cost 12-24 ms in Luau,
+  -- which is most of the 25 ms per-callback budget.
+  local btn = {
+    Y = c_tri, X = c_sqr, B = c_cir, A = c_crs,
+    TRIANGLE = c_tri, SQUARE = c_sqr, CIRCLE = c_cir, CROSS = c_crs,
+  }
+  local svg = string.gsub(base, "{{BTN_(%u+)}}", function(name)
+    return btn[name] or ""
+  end)
+  return svg
+end
+
+local function current_sig()
+  local s = full_state()
+  local function isbtn(name)
+    return type(s) == "table" and type(s.buttons) == "table" and s.buttons[name] == true
+  end
+  return (isbtn("triangle") and "1" or "0")
+    .. (isbtn("square") and "1" or "0")
+    .. (isbtn("circle") and "1" or "0")
+    .. (isbtn("cross") and "1" or "0")
+end
+
+local function controller_art_live(model)
+  local sig = current_sig()
+  local key = type(model) == "string" and model or "dualsense"
+  local path = live_path(key, sig)
+  if not path then
+    return controller_art(model)
+  end
+  local cache_key = key .. "|" .. sig
+  if art_live_cache[cache_key] == path and noctalia.fileExists(path) then
+    return path
+  end
+  local svg = build_live_svg(key, sig)
+  if not svg or not noctalia.writeFile(path, svg) then
+    return controller_art(model)
+  end
+  art_live_cache[cache_key] = path
+  return path
+end
+
+-- Warm the shared base template for each family at load (100 ms budget). A model
+-- change at runtime then only swaps the four button tokens; if the base were
+-- still cold, that first render could exceed 25 ms.
+local function warm_live()
+  local families = { "8bitdo", "dualsense", "ds4" }
+  for _, key in ipairs(families) do
+    local svg = build_live_svg(key, "0000")
+    local path = live_path(key, "0000")
+    if svg and path then
+      if not noctalia.fileExists(path) then
+        noctalia.writeFile(path, svg)
+      end
+      art_live_cache[key .. "|0000"] = path
+    end
+  end
 end
 
 local function weight(value)
@@ -498,13 +703,16 @@ local function header(s)
   end
 
   local children = {}
-  local art = controller_art(s.model)
+  local art = settings.icon_buttons and controller_art_live(s.model) or controller_art(s.model)
   if art then
+    -- Icon mode is the whole point of the artwork, so give it more room.
+    local art_w = settings.icon_buttons and 120 or 76
+    local art_h = settings.icon_buttons and 90 or 57
     table.insert(children, ui.image({
       key = "controller-art",
       path = art,
-      width = 76,
-      height = 57,
+      width = art_w,
+      height = art_h,
       fit = "contain",
     }))
   end
@@ -627,7 +835,9 @@ render = function()
   local children
   if s then
     children = { header(s) }
-    if settings.show_inputs ~= false then
+    -- Icon mode is the compact view: the buttons live on the artwork, so the
+    -- separate input grid stays hidden.
+    if settings.show_inputs ~= false and not settings.icon_buttons then
       local shoulders_node = settings.vertical_layout and shoulders_vertical(s) or shoulders(s)
       local body_node = settings.vertical_layout and body_vertical() or body()
       table.insert(children, shoulders_node)
@@ -645,6 +855,14 @@ render = function()
 end
 
 current_state = noctalia.state.get("inputs")
+-- Prepare the icon artwork while the load budget (100 ms) is available, so a
+-- later render only has to swap a file path.
+if settings.icon_buttons then
+  local t0 = os.clock()
+  warm_live()
+  noctalia.log(string.format("[gamepad] warmed icon art in %.1f ms",
+    (os.clock() - t0) * 1000))
+end
 noctalia.setUpdateInterval(1000)
 noctalia.state.watch("inputs", function(value)
   current_state = value
