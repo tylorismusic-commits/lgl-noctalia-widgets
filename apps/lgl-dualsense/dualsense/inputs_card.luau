@@ -158,7 +158,7 @@ local function controller_art(model)
   local path = dir .. "/controller-" .. color_key(key)
     .. "-" .. color_key(line) .. "-" .. color_key(body)
     .. "-" .. color_key(lightbar) .. "-" .. color_key(stroke_text)
-    .. "-" .. color_key(opacity_text) .. ".svg"
+    .. "-" .. color_key(opacity_text) .. "-v2.svg"
   if art_cache[key] == path and noctalia.fileExists(path) then
     return path
   end
@@ -327,7 +327,7 @@ local function live_path(model, sig)
     .. "-" .. color_key(line) .. "-" .. color_key(body)
     .. "-" .. color_key(lightbar) .. "-" .. color_key(stroke_text)
     .. "-" .. color_key(grip_text) .. "-" .. color_key(opacity_text)
-    .. "-" .. sig .. ".svg"
+    .. "-" .. sig .. "-v2.svg"
 end
 
 -- sig = triangle, square, circle, cross ("1" pressed).
