@@ -4,8 +4,8 @@
 
 **Live controller artwork, inputs, and battery for Noctalia desktop.**
 
-[![Version](https://img.shields.io/badge/version-1.2.0-purple)](dualsense/plugin.toml)
-[![Plugin API](https://img.shields.io/badge/Noctalia_API-17-blue)](dualsense/plugin.toml)
+[![Version](https://img.shields.io/badge/version-1.3.0-purple)](gamepad-display/plugin.toml)
+[![Plugin API](https://img.shields.io/badge/Noctalia_API-17-blue)](gamepad-display/plugin.toml)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 </div>
@@ -25,9 +25,9 @@ own battery service without fighting over HID reports.
 
 | Field | Value |
 | --- | --- |
-| Plugin ID | `deadYokai/dualsense` |
+| Plugin ID | `tylorismusic/gamepad-display` |
 | Display name | `Gamepad Display` |
-| Version | `1.2.0` |
+| Version | `1.3.0` |
 | Entries | Services `battery` + `listener`, desktop widget `inputs` |
 | Plugin API | 17 |
 | License | MIT |
@@ -84,8 +84,8 @@ not, and add the widget from **Settings → Desktop → Toggle Editor**.
 For KWE, you can also enable the plugin from a terminal:
 
 ```bash
-noctalia-kwe msg plugins enable deadYokai/dualsense
-noctalia-kwe msg plugins list | grep deadYokai/dualsense
+noctalia-kwe msg plugins enable tylorismusic/gamepad-display
+noctalia-kwe msg plugins list | grep tylorismusic/gamepad-display
 ```
 
 The service must say `enabled` before the widget can receive input state.
