@@ -118,7 +118,7 @@ end
 local ART = {
   dualsense = { template = "assets/controller-template.svg", fallback = "assets/controller.svg" },
   edge = { template = "assets/controller-template.svg", fallback = "assets/controller.svg" },
-  ds4 = { template = "assets/ds4-template.svg", fallback = "assets/ds4.svg" },
+  ds4 = { template = "assets/controller-template.svg", fallback = "assets/controller.svg" },
   ["8bitdo"] = { template = "assets/xbox-template.svg", fallback = "assets/xbox.svg" },
   xinput = { template = "assets/xbox-template.svg", fallback = "assets/xbox.svg" },
 }
@@ -346,8 +346,24 @@ local function live_colors(model)
 end
 
 -- sig = triangle, square, circle, cross ("1" pressed).
+-- Trigger bar path: flat-bottomed bar with rounded top corners.
+-- Outline: bottom-left -> across bottom -> up right side -> rounded top ->
+-- across top -> rounded top -> down left side -> close.
+local function trig_bar(x0, x1, top, bottom, r, rounded)
+  if not rounded or (bottom - top) < 2 * r then
+    return string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f L%.1f %.1f Z", x0, bottom, x1, bottom, x1, top, x0, top)
+  end
+  return string.format("M%.1f %.1f L%.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f Q%.1f %.1f %.1f %.1f L%.1f %.1f Z",
+    x0, bottom, x1, bottom, x1, top + r, x1, top, x1 - r, top, x0 + r, top, x0, top, x0, top + r, x0, bottom)
+end
+
 local function build_live_svg(model, sig)
   local key = type(model) == "string" and model or "dualsense"
+  -- A DualShock 4 plugged in renders with the DualSense artwork + buttons
+  -- (the DS4 template is the ugly one); edge already shares the DualSense set.
+  if key == "ds4" or key == "edge" then
+    key = "dualsense"
+  end
   local line, body, lightbar, stroke_text, grip_text, opacity_text = live_colors(key)
   local base = live_base(key, line, body, lightbar, stroke_text, grip_text, opacity_text)
   if not base then
@@ -404,26 +420,62 @@ local function build_live_svg(model, sig)
     trig_l2_y = string.format("%.1f", 2 + (mh - l2 * mh))
     trig_r2_h = string.format("%.1f", r2 * mh)
     trig_r2_y = string.format("%.1f", 2 + (mh - r2 * mh))
+    -- Generate SVG path for L2 trigger (flat-bottomed, rounded-top shape sitting behind bumper)
+    local fill_h = l2 * mh
+    local top = 2 + (mh - fill_h)
+    local bottom = 2 + mh
+    local x0, x1, r = 31, 39, 4
+    trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
+    -- Generate SVG path for R2 trigger
+    fill_h = r2 * mh
+    top = 2 + (mh - fill_h)
+    bottom = 2 + mh
+    x0, x1, r = 81, 89, 4
+    trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 35 + lx * 6)
     stick_ly = string.format("%.1f", 33 + ly * 6)
     stick_rx = string.format("%.1f", 85 + rx * 6)
     stick_ry = string.format("%.1f", 52 + ry * 6)
   elseif key == "ds4" then
-    local mh = 8
+    local mh = 10
     trig_l2_h = string.format("%.1f", l2 * mh)
-    trig_l2_y = string.format("%.1f", 6 + (mh - l2 * mh))
+    trig_l2_y = string.format("%.1f", 4 + (mh - l2 * mh))
     trig_r2_h = string.format("%.1f", r2 * mh)
-    trig_r2_y = string.format("%.1f", 6 + (mh - r2 * mh))
+    trig_r2_y = string.format("%.1f", 4 + (mh - r2 * mh))
+    -- Generate SVG path for L2 trigger
+    local fill_h = l2 * mh
+    local top = 4 + (mh - fill_h)
+    local bottom = 4 + mh
+    local x0, x1, r = 23, 31, 3
+    trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
+    -- Generate SVG path for R2 trigger
+    fill_h = r2 * mh
+    top = 4 + (mh - fill_h)
+    bottom = 4 + mh
+    x0, x1, r = 85, 93, 3
+    trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45 + lx * 6)
     stick_ly = string.format("%.1f", 57 + ly * 6)
     stick_rx = string.format("%.1f", 75 + rx * 6)
     stick_ry = string.format("%.1f", 57 + ry * 6)
   else
-    local mh = 8
+    local mh = 10
     trig_l2_h = string.format("%.1f", l2 * mh)
     trig_l2_y = string.format("%.1f", 12 + (mh - l2 * mh))
     trig_r2_h = string.format("%.1f", r2 * mh)
     trig_r2_y = string.format("%.1f", 12 + (mh - r2 * mh))
+    -- Generate SVG path for L2 trigger
+    local fill_h = l2 * mh
+    local top = 12 + (mh - fill_h)
+    local bottom = 12 + mh
+    local x0, x1, r = 25, 33, 3
+    trig_l2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
+    -- Generate SVG path for R2 trigger
+    fill_h = r2 * mh
+    top = 12 + (mh - fill_h)
+    bottom = 12 + mh
+    x0, x1, r = 95, 103, 3
+    trig_r2_path = trig_bar(x0, x1, top, bottom, r, fill_h >= 2 * r)
     stick_lx = string.format("%.1f", 45.5 + lx * 3)
     stick_ly = string.format("%.1f", 64.46 + ly * 3)
     stick_rx = string.format("%.1f", 82.5 + rx * 3)
@@ -489,7 +541,7 @@ local function controller_art_live(model)
   local ry = quantize(axis_val("sticks", "ry"), 0.05)
   local l2q = quantize(axis_val("triggers", "l2"), 0.05)
   local r2q = quantize(axis_val("triggers", "r2"), 0.05)
-  local qkey = key .. "|" .. sig .. "|" .. l2q .. "|" .. r2q .. "|" .. lx .. "|" .. ly .. "|" .. rx .. "|" .. ry
+  local qkey = key .. "|" .. sig .. "|" .. l2q .. "|" .. r2q .. "|" .. lx .. "|" .. ly .. "|" .. rx .. "|" .. ry .. "|" .. live_slot
   -- If nothing changed, reuse the last path (no regeneration).
   if qkey == last_live_qkey and last_live_path and noctalia.fileExists(last_live_path) then
     return last_live_path
@@ -877,7 +929,7 @@ local function shoulders(s)
     ui.spacer({ key = "shoulder-gap-l", flexGrow = 1 }),
     mini_button("create", "menu-2", button("create")),
     mini_button("ps", "circle-dot", button("ps")),
-    mini_button("mute", "microphone-off", button("mute")),
+    mini_button("options", "player-play-filled", button("options")),
     ui.spacer({ key = "shoulder-gap-r", flexGrow = 1 }),
     pill("r1", "R1", button("r1")),
     trigger_column("r2", "R2", axis("triggers", "r2"), true),
@@ -893,7 +945,7 @@ local function shoulders_vertical(s)
     ui.column({ key = "shoulder-mid", gap = 4, align = "center", justify = "center" }, {
       mini_button("create", "menu-2", button("create")),
       mini_button("ps", "circle-dot", button("ps")),
-      mini_button("mute", "microphone-off", button("mute")),
+      mini_button("options", "player-play-filled", button("options")),
     }),
     ui.column({ key = "shoulder-right", gap = 4, align = "center" }, {
       trigger_column("r2", "R2", axis("triggers", "r2"), true),
