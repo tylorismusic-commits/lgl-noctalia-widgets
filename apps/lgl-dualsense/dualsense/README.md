@@ -7,11 +7,13 @@ state, and every button, stick, trigger and D-pad direction as you use them.
 Built for KineticWE's `noctalia-kwe` v5 build (tested live on 5.3.0) and the
 upstream Noctalia v5 plugin API.
 
+## Plugin
+
 | Field | Value |
 | --- | --- |
-| Plugin ID | `deadYokai/dualsense` |
+| ID | `tylorismusic/gamepad-display` |
 | Display name | `Gamepad Display` |
-| Version | `1.2.0` |
+| Version | `1.3.0` |
 | Entries | Services `battery` + `listener`, desktop widget `inputs` |
 | Plugin API | 17 |
 | Licence | MIT |
@@ -114,7 +116,7 @@ from the input service so it also works for 8BitDo and XInput pads.
 ## Requirements
 
 - Noctalia Shell v5 with plugin API 17 or newer (`noctalia-kwe` tested)
-- Python 3 (standard library only — no pip packages)
+- `python3` (Python 3, standard library only — no pip packages)
 - Read access to the kernel evdev nodes (`/dev/input/event*`)
 - Optional: [`ds4u`](https://git.yokai.digital/deadYokai/ds4u) for Sony battery
   IPC and profile/rumble features
@@ -168,7 +170,7 @@ From the app directory (`apps/lgl-dualsense` in the repository):
 
 The scripts symlink the plugin into
 `~/.local/share/noctalia-kwe/plugins` or `~/.local/share/noctalia/plugins`,
-reload the config and enable `deadYokai/dualsense` when the shell is running.
+reload the config and enable `tylorismusic/gamepad-display` when the shell is running.
 
 If the widget was added before, place it again from the desktop-widget editor.
 Re-enabling a plugin can reset its saved placement, so re-check the box position
@@ -177,15 +179,29 @@ after toggling the plugin.
 Manual install:
 
 ```bash
-ln -sfn /path/to/lgl-dualsense-fork ~/.local/share/noctalia-kwe/plugins/dualsense
+ln -sfn /path/to/lgl-dualsense-fork ~/.local/share/noctalia-kwe/plugins/gamepad-display
 noctalia-kwe msg config-reload
-noctalia-kwe msg plugins enable deadYokai/dualsense
+noctalia-kwe msg plugins enable tylorismusic/gamepad-display
 ```
 
 Then open **Settings → Desktop → Toggle Editor** and add **Gamepad Display**.
 
 A box of roughly **240 × 152** logical pixels shows the full card at 100% scale
 on a 1080p output. The widget scales its content down if the box is smaller.
+
+## Usage
+
+1. Open **Settings → Plugins**, find **Gamepad Display** and enable it. Both
+   services (`battery` and `listener`) start with the plugin; no separate step
+   is needed.
+2. Open **Settings → Desktop → Toggle Editor** and add **Gamepad Display**.
+   Place the box where you want it and choose a `display_mode`.
+3. Connect or wake a controller. The last pad you touch is the one shown; the
+   battery service can post a low-battery notification when enabled.
+
+The widget (`inputs`) is the only user-facing entry - there is no bar widget,
+panel, shortcut or launcher provider. The `battery` and `listener` services run
+headless; `battery` uses the shared `low_threshold` and `notify_low` settings.
 
 ## Settings
 
@@ -258,7 +274,7 @@ journalctl --user -f | grep -i dualsense
 | Sony battery missing | Install the hidraw udev rule and reconnect, or install `ds4u` |
 | Widget blank after a config change | `noctalia-kwe msg config-reload`; manifest changes need `plugins disable` + `plugins enable` |
 | Widget says Python is missing | Install `python3`; the plugin uses only the standard library |
-| Plugin disabled itself after install | Enable `deadYokai/dualsense` in Settings → Plugins |
+| Plugin disabled itself after install | Enable `tylorismusic/gamepad-display` in Settings → Plugins |
 
 ## Fork notes
 

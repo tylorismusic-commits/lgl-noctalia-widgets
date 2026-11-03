@@ -631,7 +631,7 @@ local function shape_button(key, glyph, color, lit)
     align = "center",
     justify = "center",
     fill = lit and with_alpha(color, 0.3) or "surface/0.55",
-    border = lit and color or "outline/0.55",
+    border = lit and color or with_alpha(settings.muted_text_color, 0.55),
     borderWidth = lit and 2 or 1,
   }, {
     ui.glyph({ key = key .. "-glyph", name = glyph, size = 10, color = color, opacity = lit and 1 or 0.55 }),
@@ -647,7 +647,7 @@ local function letter_button(key, letter, color, lit)
     align = "center",
     justify = "center",
     fill = lit and with_alpha(color, 0.3) or "surface/0.55",
-    border = lit and color or "outline/0.55",
+    border = lit and color or with_alpha(settings.muted_text_color, 0.55),
     borderWidth = lit and 2 or 1,
   }, {
     ui.label({
@@ -670,7 +670,7 @@ local function mini_button(key, glyph, lit)
     align = "center",
     justify = "center",
     fill = lit and with_alpha(settings.accent_color, 0.35) or "surface/0.55",
-    border = lit and settings.accent_color or "outline/0.55",
+    border = lit and settings.accent_color or with_alpha(settings.muted_text_color, 0.55),
     borderWidth = lit and 2 or 1,
   }, {
     ui.glyph({
@@ -692,7 +692,7 @@ local function dpad_cell(key, glyph, lit)
     align = "center",
     justify = "center",
     fill = lit and with_alpha(settings.accent_color, 0.35) or "surface/0.55",
-    border = lit and settings.accent_color or "outline/0.55",
+    border = lit and settings.accent_color or with_alpha(settings.muted_text_color, 0.55),
     borderWidth = lit and 2 or 1,
   }, {
     ui.glyph({
@@ -723,7 +723,7 @@ local function dpad_node()
     row("dpad-mid-row", {
       dpad_cell("dpad-left", "chevron-left", x < 0),
       ui.column({ key = "dpad-center", width = CELL, height = CELL, align = "center", justify = "center" }, {
-        ui.column({ key = "dpad-center-dot", width = 6, height = 6, radius = 3, fill = "outline/0.5" }),
+        ui.column({ key = "dpad-center-dot", width = 6, height = 6, radius = 3, fill = with_alpha(settings.muted_text_color, 0.5) }),
       }),
       dpad_cell("dpad-right", "chevron-right", x > 0),
     }),
@@ -778,7 +778,7 @@ local function pill(key, text, lit)
     align = "center",
     justify = "center",
     fill = lit and with_alpha(settings.accent_color, 0.35) or "surface/0.55",
-    border = lit and settings.accent_color or "outline/0.55",
+    border = lit and settings.accent_color or with_alpha(settings.muted_text_color, 0.55),
     borderWidth = lit and 2 or 1,
   }, {
     ui.label({
@@ -812,7 +812,7 @@ local function trigger_column(key, text, value, align_end)
       height = 4,
       radius = 2,
       fill = settings.accent_color,
-      track = "outline/0.35",
+      track = with_alpha(settings.muted_text_color, 0.35),
     }),
   })
 end

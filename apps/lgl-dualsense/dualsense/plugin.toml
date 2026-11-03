@@ -4,15 +4,15 @@
 # publishes button / stick / trigger state for the desktop card) and the battery
 # reader. The desktop widget shows the active pad, its artwork, and live input.
 
-id           = "deadYokai/dualsense"
+id           = "tylorismusic/gamepad-display"
 name         = "Gamepad Display"
-version      = "1.2.0"
+version      = "1.3.0"
 plugin_api   = 17
-author       = "deadYokai"
+author       = "tylorismusic"
 license      = "MIT"
 icon         = "device-gamepad-2"
-description  = "Live button, stick, trigger and D-pad display for DualSense, DualSense Edge, DualShock 4 and 8BitDo controllers, with battery level and controller artwork."
-tags         = ["gaming", "hardware", "battery", "dualsense", "dualshock", "8bitdo", "input", "desktop"]
+description  = "Live controller button, stick, trigger and D-pad display with battery level and artwork."
+tags         = ["gaming", "hardware", "desktop", "indicator"]
 dependencies = ["python3"]
 
 # Shared by the service (notifications) and the desktop widget (low state).

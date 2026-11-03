@@ -8,7 +8,7 @@ SOURCE_DIR="$SCRIPT_DIR/dualsense"
 APP_DIR="noctalia"
 CLI="noctalia"
 DATA_HOME="${NOCTALIA_DATA_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}}"
-PLUGIN_DIR="$DATA_HOME/$APP_DIR/plugins/dualsense"
+PLUGIN_DIR="$DATA_HOME/$APP_DIR/plugins/gamepad-display"
 
 if [ ! -d "$SOURCE_DIR" ]; then
     echo "error: $SOURCE_DIR not found" >&2
@@ -32,8 +32,8 @@ if [ -n "${NOCTALIA_DATA_HOME:-}" ]; then
     echo "==> NOCTALIA_DATA_HOME is set; enable 'Gamepad Display' manually"
 elif command -v "$CLI" >/dev/null 2>&1 && "$CLI" msg config-reload >/dev/null 2>&1; then
     sleep 0.3
-    if "$CLI" msg plugins enable deadYokai/dualsense >/dev/null 2>&1; then
-        echo "==> Enabled deadYokai/dualsense"
+    if "$CLI" msg plugins enable tylorismusic/gamepad-display >/dev/null 2>&1; then
+        echo "==> Enabled tylorismusic/gamepad-display"
     else
         echo "==> Enable 'Gamepad Display' in Settings -> Plugins"
     fi

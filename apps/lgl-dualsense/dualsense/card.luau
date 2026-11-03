@@ -125,6 +125,22 @@ local function valid_hex(color)
   ) ~= nil
 end
 
+-- Append an alpha suffix to either a hex colour or a theme colour role.
+local function with_alpha(color, alpha)
+  if type(color) ~= "string" then
+    return color
+  end
+  local suffix = string.format("%02x", math.floor(alpha * 255 + 0.5))
+  if string.sub(color, 1, 1) == "#" then
+    local hex = string.gsub(color, "#", "")
+    if #hex == 6 or #hex == 8 then
+      return "#" .. string.sub(hex, 1, 6) .. suffix
+    end
+    return color
+  end
+  return color .. "/" .. string.format("%.2f", alpha)
+end
+
 local function color_key(color)
   return string.gsub(tostring(color), "[^%w]", "")
 end
@@ -445,7 +461,7 @@ local function profile_row(s, is_fresh)
       align = "center",
       radius = 5,
       fill = "surface/0.9",
-      border = "outline/0.6",
+      border = with_alpha(settings.muted_text_color, 0.6),
       borderWidth = 1,
       onClick = "onToggleProfileMenu",
     }, {
@@ -477,7 +493,7 @@ local function profile_row(s, is_fresh)
       height = 28,
       radius = 6,
       fill = "surface/" .. string.format("%.2f", settings.profile_settings_opacity),
-      border = "outline/" .. string.format("%.2f", settings.profile_settings_opacity),
+      border = with_alpha(settings.muted_text_color, settings.profile_settings_opacity),
       borderWidth = 1,
       align = "center",
       justify = "center",
@@ -609,14 +625,14 @@ render = function()
       width = 22,
       height = 5,
       radius = 2,
-      fill = "outline",
+      fill = with_alpha(settings.muted_text_color, 1),
     }),
     ui.column({
       key = "battery-body",
       width = BODY_W,
       height = BODY_H,
       radius = 12,
-      border = "outline",
+      border = with_alpha(settings.muted_text_color, 1),
       borderWidth = 2,
       padding = 5,
       justify = "end",

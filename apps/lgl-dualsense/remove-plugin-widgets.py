@@ -6,7 +6,7 @@ Usage:
 
 Example:
     remove-plugin-widgets.py ~/.local/state/noctalia-kwe/settings.toml \
-        deadYokai/dualsense:inputs
+        tylorismusic/gamepad-display:inputs
 
 The file is backed up as settings.toml.bak.YYYYMMDD-HHMMSS before writing.
 Other widgets and settings are preserved; the result is validated with tomllib.

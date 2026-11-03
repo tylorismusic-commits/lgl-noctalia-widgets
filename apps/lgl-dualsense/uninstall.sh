@@ -10,9 +10,9 @@ CLI="noctalia"
 DATA_HOME="${NOCTALIA_DATA_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}}"
 STATE_HOME="${NOCTALIA_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}}"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
-PLUGIN_DIR="$DATA_HOME/$APP_DIR/plugins/dualsense"
+PLUGIN_DIR="$DATA_HOME/$APP_DIR/plugins/gamepad-display"
 SETTINGS="$STATE_HOME/$APP_DIR/settings.toml"
-PLUGIN_DATA="$STATE_HOME/$APP_DIR/plugins/data/deadYokai/dualsense"
+PLUGIN_DATA="$STATE_HOME/$APP_DIR/plugins/data/tylorismusic/gamepad-display"
 LOCK="$RUNTIME_DIR/noctalia-dualsense-battery.lock"
 STATE="$RUNTIME_DIR/noctalia-dualsense-battery.json"
 INPUT_LOCK="$RUNTIME_DIR/noctalia-dualsense-inputs.lock"
@@ -61,8 +61,8 @@ fi
 # Stop the service through the running shell so its onExit hook cleans up.
 if [ -z "${NOCTALIA_DATA_HOME:-}" ] && [ -z "${NOCTALIA_STATE_HOME:-}" ] \
     && command -v "$CLI" >/dev/null 2>&1; then
-    if "$CLI" msg plugins disable deadYokai/dualsense >/dev/null 2>&1; then
-        echo "==> Disabled deadYokai/dualsense"
+    if "$CLI" msg plugins disable tylorismusic/gamepad-display >/dev/null 2>&1; then
+        echo "==> Disabled tylorismusic/gamepad-display"
         sleep 0.5
     fi
 fi
@@ -71,9 +71,9 @@ fi
 if [ -f "$SETTINGS" ] && command -v python3 >/dev/null 2>&1 \
     && [ -f "$SCRIPT_DIR/remove-plugin-widgets.py" ]; then
     python3 "$SCRIPT_DIR/remove-plugin-widgets.py" \
-        "$SETTINGS" "deadYokai/dualsense:inputs" || true
+        "$SETTINGS" "tylorismusic/gamepad-display:inputs" || true
     python3 "$SCRIPT_DIR/remove-plugin-widgets.py" \
-        "$SETTINGS" "deadYokai/dualsense:card" || true
+        "$SETTINGS" "tylorismusic/gamepad-display:card" || true
 else
     echo "==> Skipping widget cleanup (no settings file, python3, or helper)"
 fi
