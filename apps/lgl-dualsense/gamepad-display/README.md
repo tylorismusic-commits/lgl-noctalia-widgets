@@ -246,6 +246,33 @@ Colour settings accept a `#rrggbb` value or a Noctalia palette role such as
 `primary`, `on_surface` or `on_surface_variant`. Palette roles follow the live
 theme; the generated artwork is rewritten when a colour changes.
 
+## IPC
+
+The `battery` service accepts these events:
+
+```sh
+noctalia msg plugin tylorismusic/gamepad-display:battery all buzz
+noctalia msg plugin tylorismusic/gamepad-display:battery all cycle-profile
+noctalia msg plugin tylorismusic/gamepad-display:battery all switch-profile "Profile name"
+noctalia msg plugin tylorismusic/gamepad-display:battery all restart
+```
+
+- `buzz` rumbles the active pad through ds4u IPC or a direct HID output report.
+- `cycle-profile` switches to the next saved ds4u profile.
+- `switch-profile <name>` switches to the named ds4u profile.
+- `restart` restarts the battery daemon.
+
+## Notes
+
+- Profile switching uses the running ds4u daemon when it answers. If it does not,
+  the battery service writes `~/.config/ds4u/settings.json`, setting `profile` to
+  the chosen name and keeping the other keys, and applies that profile's lightbar
+  and player LEDs directly over HID.
+- The daemons write only their own state and lock files under
+  `$XDG_RUNTIME_DIR`, generated controller SVGs under the plugin data directory,
+  and the ds4u settings file above. They do not download anything and make no
+  network calls.
+
 ## Diagnostics
 
 Runtime state:
